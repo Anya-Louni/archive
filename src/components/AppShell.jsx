@@ -47,7 +47,12 @@ export function AppShell({ user, badgeLabels, onLogout, children }) {
                         aria-haspopup="menu"
                         aria-label={`${user.username} — account menu`}
                       >
-                        <span className="user-avatar-sm" aria-hidden="true">{initials}</span>
+                        <span className="user-avatar-sm" aria-hidden="true">
+                          {user.avatar_url
+                            ? <img src={user.avatar_url} alt="" className="user-avatar-img" />
+                            : initials
+                          }
+                        </span>
                         <span className="user-menu-name">{user.username}</span>
                         <span className="user-menu-caret" aria-hidden="true">▾</span>
                       </button>

@@ -36,8 +36,7 @@ join (
       null,
       '2007-11-09',
       'Under Investigation',
-      231
-    ),
+
     (
       'Strange geocities backup page listing broken ARG clues',
       'A preserved index page references clue files that now return 404 in every mirror. We recovered two screenshot fragments and one dead domain registration entry for timeline correlation.',

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { BadgeDisplay } from '../components/BadgeDisplay'
@@ -59,7 +59,11 @@ export function ProfilePage({ user }) {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [notice, setNotice] = useState('')
   const [noticeType, setNoticeType] = useState('info')
+  const [avatarUrl, setAvatarUrl] = useState(user.avatar_url || '')
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef(null)
   const navigate = useNavigate()
+  const initials = (profileForm.username || user.username || 'A').slice(0, 2).toUpperCase()
 
   const setField = (field, value) => setProfileForm((old) => ({ ...old, [field]: value }))
 
@@ -82,6 +86,39 @@ export function ProfilePage({ user }) {
     }
     load()
   }, [user.id])
+
+  const uploadAvatar = async (file) => {
+    if (!file.type.startsWith('image/')) {
+      showNotice('Please select an image file.', 'error')
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      showNotice('Image must be under 2 MB.', 'error')
+      return
+    }
+    setUploading(true)
+    setNotice('')
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('avatar')
+        .upload(user.id, file, { upsert: true, contentType: file.type })
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage.from('avatar').getPublicUrl(user.id)
+      const urlWithBust = `${publicUrl}?t=${Date.now()}`
+
+      const { error: updateError } = await supabase.auth.updateUser({ data: { avatar_url: urlWithBust } })
+      if (updateError) throw updateError
+
+      setAvatarUrl(urlWithBust)
+      showNotice('Avatar updated.', 'success')
+    } catch (e) {
+      showNotice(e.message, 'error')
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   const saveProfile = async () => {
     setNotice('')
@@ -140,6 +177,37 @@ export function ProfilePage({ user }) {
       <aside className="card community-side">
         <h3 style={{ margin: '0 0 0.7rem' }}>Identity Card</h3>
         <div style={{ display: 'grid', gap: '0.45rem' }}>
+
+          {/* Avatar upload */}
+          <div className="avatar-upload-area">
+            <div
+              className="avatar-upload-trigger"
+              onClick={() => !uploading && fileInputRef.current?.click()}
+              title="Click to change avatar"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click() }}
+            >
+              {avatarUrl
+                ? <img src={avatarUrl} alt="Your avatar" className="profile-avatar-img" />
+                : <span className="profile-avatar-initials">{initials}</span>
+              }
+              <span className="avatar-edit-overlay" aria-hidden="true">
+                {uploading ? '…' : 'Change'}
+              </span>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadAvatar(f) }}
+            />
+            <small className="meta-line" style={{ fontSize: '0.72rem' }}>
+              {uploading ? 'Uploading…' : 'Click to change · JPG, PNG, WebP · max 2 MB'}
+            </small>
+          </div>
+
           <div>
             <strong style={{ fontSize: '1.05rem' }}>{profileForm.username || user.username}</strong>
             <p className="meta-line" style={{ margin: '0.1rem 0 0' }}>{user.email}</p>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
@@ -12,7 +12,26 @@ export function AuthPage() {
   const [notice, setNotice] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
+  const cooldownRef = useRef(null)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    return () => { if (cooldownRef.current) clearInterval(cooldownRef.current) }
+  }, [])
+
+  const startCooldown = (seconds = 60) => {
+    setCooldown(seconds)
+    cooldownRef.current = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(cooldownRef.current)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
 
   const passwordType = useMemo(() => (showPassword ? 'text' : 'password'), [showPassword])
 
@@ -37,6 +56,7 @@ export function AuthPage() {
         })
         if (signError) throw signError
 
+        startCooldown(60)
         setNotice('Registration successful. Please verify your email before login.')
         setMode('login')
         setForm({ email: '', password: '', confirmPassword: '', username: '' })
@@ -50,6 +70,7 @@ export function AuthPage() {
         })
         if (resetError) throw resetError
 
+        startCooldown(60)
         setNotice('Password reset link sent to your email. Check your inbox and follow the link to create a new password.')
         setMode('login')
         setForm({ email: '', password: '', confirmPassword: '', username: '' })
@@ -68,7 +89,12 @@ export function AuthPage() {
         navigate(intent === 'post' ? '/post' : '/')
       }
     } catch (e) {
-      setError(e.message)
+      if (e.status === 429 || /rate.limit|too many/i.test(e.message)) {
+        setError('Too many requests. Please wait a minute and try again.')
+        startCooldown(60)
+      } else {
+        setError(e.message)
+      }
     } finally {
       setLoading(false)
     }
@@ -171,8 +197,8 @@ export function AuthPage() {
         {error ? <p className="error-inline">{error}</p> : null}
         {notice ? <p>{notice}</p> : null}
 
-        <button className="stamp-button" disabled={loading}>
-          {loading ? 'Processing...' : mode === 'login' ? 'Login' : mode === 'register' ? 'Create Account' : 'Send Reset Link'}
+        <button className="stamp-button" disabled={loading || cooldown > 0}>
+          {loading ? 'Processing...' : cooldown > 0 ? `Try again in ${cooldown}s` : mode === 'login' ? 'Login' : mode === 'register' ? 'Create Account' : 'Send Reset Link'}
         </button>
       </form>
 

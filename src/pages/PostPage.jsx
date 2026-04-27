@@ -82,7 +82,7 @@ export function PostPage({ user }) {
   }
 
   return (
-    <section>
+    <section style={{ paddingBottom: '2rem' }}>
       <div className="breadcrumb" style={{ marginBottom: '0.75rem' }}>
         <Link to="/catalog">Browse Archive</Link>
         <span className="breadcrumb-sep">›</span>
@@ -91,11 +91,13 @@ export function PostPage({ user }) {
 
       <div className="reddit-compose-layout">
         {/* Form */}
-        <article className="card">
-          <h2 style={{ margin: '0 0 0.25rem' }}>Submit a Case</h2>
-          <p className="meta-line" style={{ marginBottom: '1rem' }}>
-            Share a digital artifact, lost media, or internet mystery with the community.
-          </p>
+        <article className="card post-form-card">
+          <div className="post-form-header">
+            <h2 style={{ margin: 0, fontSize: 'clamp(1.2rem, 2vw, 1.55rem)' }}>Submit a Case</h2>
+            <p className="meta-line" style={{ margin: '0.25rem 0 0' }}>
+              Share a digital artifact, lost media, or internet mystery with the community.
+            </p>
+          </div>
 
           {/* Post type tabs */}
           <div className="reddit-tabs" style={{ marginBottom: '0.85rem' }}>

@@ -132,9 +132,11 @@ export function HomePage({ user }) {
   const userCheers = useMemo(() => new Set(wallPosts.filter((p) => p.cheered_by_user).map((p) => p.id)), [wallPosts])
 
   const loadWallPosts = useCallback(async () => {
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
     const { data } = await supabase
       .from('wall_posts_with_cheers')
       .select('*')
+      .gte('created_at', cutoff)
       .order('created_at', { ascending: true })
       .limit(WALL_VISIBLE_LIMIT)
     if (data) setWallPosts(data)
@@ -160,10 +162,9 @@ export function HomePage({ user }) {
   }, [navigate])
 
   const cardItems = useMemo(() => {
-    if (previewItems.length <= 5) return previewItems
     const pool = [...previewItems]
     const picks = []
-    while (picks.length < 5 && pool.length) {
+    while (picks.length < 3 && pool.length) {
       const idx = Math.floor(Math.random() * pool.length)
       picks.push(pool.splice(idx, 1)[0])
     }
@@ -241,7 +242,7 @@ export function HomePage({ user }) {
 
       {/* ── Blog masthead (self-contained, no AppShell header on this page) ── */}
       <div className="home-masthead">
-        <p className="home-hero-eyebrow">CASE STATUS: ONGOING · EST. 2024</p>
+        <p className="home-hero-eyebrow">· CASE STATUS: ONGOING ·</p>
         <span className="archive-logo-stamp home-hero-stamp" aria-label="Internet Artifact Archive">
           Internet Artifact Archive
         </span>
@@ -291,7 +292,7 @@ export function HomePage({ user }) {
                 <CardSwap
                   width={560}
                   height={380}
-                  cardDistance={0}
+                  cardDistance={14}
                   verticalDistance={0}
                   delay={3000}
                   pauseOnHover
@@ -306,10 +307,16 @@ export function HomePage({ user }) {
                           <span className="case-folder-label">{item.category_name || 'Unsorted'}</span>
                         </div>
                         <div className="case-file-inner">
+                          <div className="case-file-header">
+                            <span className="case-featured-label">Featured Case</span>
+                            <span className={`status-chip status-${(item.status || 'Unknown').replace(/\s+/g, '-').toLowerCase()}`}>
+                              {item.status || 'Unknown'}
+                            </span>
+                          </div>
                           <h3 className="case-file-title">{item.title}</h3>
                           <p className="case-file-author">by {item.username || 'unknown'}</p>
                           <p className="case-file-desc">
-                            {item.description?.slice(0, 160) || 'No summary yet.'}
+                            {item.description?.slice(0, 130) || 'No summary yet.'}
                           </p>
                           <div className="case-file-footer">
                             <span className="case-file-hint">click to open →</span>
@@ -330,13 +337,15 @@ export function HomePage({ user }) {
           <div className="home-blog-posts">
             {previewItems.slice(0, 6).map((entry) => (
               <article key={entry.id} className="home-blog-post">
-                <div className="home-blog-post-meta">
+                <div className="home-blog-post-header">
                   <span className="category-stamp">{entry.category_name || 'Unsorted'}</span>
-                  <span className={statusClass(entry.status)}>{entry.status || 'Unknown'}</span>
-                  <span className="meta-line">{entry.artifact_date || '—'}</span>
+                  <div className="home-blog-post-rightmeta">
+                    <span className={statusClass(entry.status)}>{entry.status || 'Unknown'}</span>
+                    <span className="meta-line">{entry.artifact_date || '—'}</span>
+                  </div>
                 </div>
                 <h2 className="home-blog-post-title">
-                  <button type="button" className="linkish" onClick={() => openArtifact(entry.id)}>
+                  <button type="button" className="home-blog-title-link" onClick={() => openArtifact(entry.id)}>
                     {entry.title}
                   </button>
                 </h2>

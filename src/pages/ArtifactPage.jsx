@@ -79,22 +79,22 @@ export function ArtifactPage({ user }) {
       const [oneResult, tResult, aResult, cResult, rResult] = await Promise.all([
         supabase
           .from('artifacts')
-          .select('id,user_id,title,description,source_link,media_url,artifact_date,status,vote_score,categories(name),profiles(username)')
+          .select('id,user_id,title,description,source_link,media_url,artifact_date,status,vote_score,categories(name),profiles!user_id(username)')
           .eq('id', artifactId)
           .single(),
         supabase
           .from('timeline_entries')
-          .select('id,user_id,entry,created_at,profiles(username)')
+          .select('id,user_id,entry,created_at,profiles!user_id(username)')
           .eq('artifact_id', artifactId)
           .order('created_at', { ascending: true }),
         supabase
           .from('analyses')
-          .select('id,user_id,content,vote_score,created_at,profiles(username)')
+          .select('id,user_id,content,vote_score,created_at,profiles!user_id(username)')
           .eq('artifact_id', artifactId)
           .order('vote_score', { ascending: false }),
         supabase
           .from('comments')
-          .select('id,user_id,content,created_at,profiles(username)')
+          .select('id,user_id,content,created_at,profiles!user_id(username)')
           .eq('artifact_id', artifactId)
           .order('created_at', { ascending: true }),
         supabase
@@ -354,9 +354,28 @@ export function ArtifactPage({ user }) {
 
           {/* Post header */}
           <article className="card">
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <span className="category-stamp">{artifact.categories?.name ?? 'Uncategorized'}</span>
-              <span className={`status-badge status-${statusSlug}`}>{artifact.status}</span>
+            <div className="artifact-card-toprow">
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <span className="category-stamp">{artifact.categories?.name ?? 'Uncategorized'}</span>
+                <span className={`status-badge status-${statusSlug}`}>{artifact.status}</span>
+              </div>
+              <div className="artifact-score-badge">
+                <button
+                  type="button"
+                  title="Upvote"
+                  aria-label="Upvote this artifact"
+                  disabled={!user || user.is_banned || user.id === artifact.user_id}
+                  onClick={() => voteArtifact(1)}
+                >▲</button>
+                <span className="artifact-score-number">{artifact.vote_score ?? 0}</span>
+                <button
+                  type="button"
+                  title="Downvote"
+                  aria-label="Downvote this artifact"
+                  disabled={!user || user.is_banned || user.id === artifact.user_id}
+                  onClick={() => voteArtifact(-1)}
+                >▼</button>
+              </div>
             </div>
 
             <h1 style={{ fontSize: 'clamp(1.2rem, 2.5vw, 1.75rem)', margin: '0 0 0.35rem' }}>
@@ -368,30 +387,8 @@ export function ArtifactPage({ user }) {
               <strong>{artifact.profiles?.username ?? 'unknown'}</strong>
             </p>
 
-            {/* Vote row */}
-            <div className="artifact-vote-row" style={{ marginBottom: '1rem' }}>
-              <button
-                type="button"
-                title="Upvote"
-                aria-label="Upvote this artifact"
-                disabled={!user || user.is_banned || user.id === artifact.user_id}
-                onClick={() => voteArtifact(1)}
-              >
-                ▲
-              </button>
-              <span className="vote-score">{artifact.vote_score ?? 0}</span>
-              <button
-                type="button"
-                title="Downvote"
-                aria-label="Downvote this artifact"
-                disabled={!user || user.is_banned || user.id === artifact.user_id}
-                onClick={() => voteArtifact(-1)}
-              >
-                ▼
-              </button>
-              {!user ? <small className="meta-line">Sign in to vote</small> : null}
-              {user && user.id === artifact.user_id ? <small className="meta-line">You cannot vote on your own post</small> : null}
-            </div>
+            {!user ? <p className="meta-line" style={{ marginBottom: '0.8rem', fontSize: '0.82rem' }}>Sign in to vote</p> : null}
+            {user && user.id === artifact.user_id ? <p className="meta-line" style={{ marginBottom: '0.8rem', fontSize: '0.82rem' }}>You cannot vote on your own post</p> : null}
 
             <p style={{ lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{artifact.description}</p>
 
@@ -422,87 +419,70 @@ export function ArtifactPage({ user }) {
             ) : null}
           </article>
 
-          {/* ── Admin Controls (admin only) ── */}
+          {/* ── Moderator Controls (admin only) ── */}
           {isAdmin ? (
-            <article className="card admin-controls-panel">
-              <div className="admin-panel-header">
-                <span className="admin-panel-badge">◆ ADMIN</span>
-                <h3>Moderator Controls</h3>
-                {reportCount > 0 ? (
-                  <span className="report-count-tag">{reportCount} open report{reportCount !== 1 ? 's' : ''}</span>
-                ) : null}
-              </div>
-
-              <div className="admin-section">
-                <p className="admin-section-label">Set Case Status</p>
-                <div className="inline-form" style={{ flexWrap: 'wrap' }}>
-                  {STATUS_OPTIONS.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      className={artifact.status === s ? 'stamp-button' : ''}
-                      onClick={() => setStatus(s)}
-                      style={{ fontSize: '0.84rem' }}
-                    >
-                      {s}
-                    </button>
-                  ))}
+            <article className="card mod-controls-bar">
+              <div className="mod-bar-row">
+                <div className="mod-bar-left">
+                  <span className="mod-bar-badge">◆ ADMIN</span>
+                  {reportCount > 0 ? (
+                    <span className="report-count-tag">{reportCount} open report{reportCount !== 1 ? 's' : ''}</span>
+                  ) : null}
                 </div>
-              </div>
-
-              <div className="admin-section">
-                <p className="admin-section-label">Moderation Actions</p>
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    onClick={clearReports}
-                    disabled={reportCount === 0}
-                    style={{ fontSize: '0.82rem' }}
-                  >
+                <div className="mod-bar-right">
+                  <button type="button" onClick={clearReports} disabled={reportCount === 0} style={{ fontSize: '0.78rem' }}>
                     Clear Reports ({reportCount})
                   </button>
-                  <button type="button" className="danger" onClick={deletePost} style={{ fontSize: '0.82rem' }}>
+                  <button type="button" className="danger" onClick={deletePost} style={{ fontSize: '0.78rem' }}>
                     Delete Post
                   </button>
                 </div>
               </div>
-
-              <div className="admin-section">
-                <p className="admin-section-label">Post Info</p>
-                <p className="meta-line" style={{ margin: 0, fontSize: '0.82rem' }}>
-                  Filed by <strong>{artifact.profiles?.username ?? 'unknown'}</strong> · Artifact ID: <code style={{ fontSize: '0.8rem' }}>{artifact.id}</code>
-                </p>
+              <div className="mod-status-row">
+                <span className="mod-bar-label">Status:</span>
+                {STATUS_OPTIONS.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    className={`mod-status-btn${artifact.status === s ? ' mod-status-active' : ''}`}
+                    onClick={() => setStatus(s)}
+                  >
+                    {s}
+                  </button>
+                ))}
               </div>
+              <p className="mod-bar-info">
+                Filed by <strong>{artifact.profiles?.username ?? 'unknown'}</strong>
+                {' · '}ID: <code style={{ fontSize: '0.75rem' }}>{artifact.id}</code>
+              </p>
             </article>
           ) : null}
 
-          {/* ── Owner Controls (post author, non-admin only) ── */}
+          {/* ── Post Controls (owner only) ── */}
           {isOwner && !isAdmin ? (
-            <article className="card owner-controls-panel">
-              <div className="owner-panel-header">
-                <span className="owner-panel-badge">YOUR POST</span>
-                <h3>Post Controls</h3>
-              </div>
-              <div style={{ marginBottom: '0.55rem' }}>
-                <p className="meta-line" style={{ margin: '0 0 0.4rem', fontSize: '0.82rem' }}>Update case status:</p>
-                <div className="inline-form" style={{ flexWrap: 'wrap' }}>
-                  {STATUS_OPTIONS.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      className={artifact.status === s ? 'stamp-button' : ''}
-                      onClick={() => setStatus(s)}
-                      style={{ fontSize: '0.84rem' }}
-                    >
-                      {s}
-                    </button>
-                  ))}
+            <article className="card mod-controls-bar owner-mod-bar">
+              <div className="mod-bar-row">
+                <div className="mod-bar-left">
+                  <span className="mod-bar-badge owner-badge">YOUR POST</span>
+                </div>
+                <div className="mod-bar-right">
+                  <button type="button" className="danger" onClick={deletePost} style={{ fontSize: '0.78rem' }}>
+                    Delete Post
+                  </button>
                 </div>
               </div>
-              <div style={{ borderTop: '1px dashed var(--border)', paddingTop: '0.5rem' }}>
-                <button type="button" className="danger" onClick={deletePost} style={{ fontSize: '0.82rem' }}>
-                  Delete this post
-                </button>
+              <div className="mod-status-row">
+                <span className="mod-bar-label">Status:</span>
+                {STATUS_OPTIONS.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    className={`mod-status-btn${artifact.status === s ? ' mod-status-active' : ''}`}
+                    onClick={() => setStatus(s)}
+                  >
+                    {s}
+                  </button>
+                ))}
               </div>
             </article>
           ) : null}

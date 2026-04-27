@@ -11,6 +11,7 @@ import { ProfilePage } from './pages/ProfilePage'
 import { PostPage } from './pages/PostPage'
 import { HomePage } from './pages/HomePage'
 import { CatalogPage } from './pages/CatalogPage'
+import { NotFoundPage } from './pages/NotFoundPage'
 
 const INIT_TIMEOUT_MS = 12000
 const INIT_RETRIES = 1
@@ -212,6 +213,7 @@ export default function App() {
             </AdminRoute>
           }
         />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AppShell>
   )

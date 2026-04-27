@@ -115,7 +115,7 @@ export function AdminPage() {
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('artifacts').select('*', { count: 'exact', head: true }),
         supabase.from('profiles').select('id,username,is_banned,is_admin,badges,created_at').order('created_at', { ascending: false }),
-        supabase.from('reports').select('id,reason,status,created_at,artifacts(title),profiles(username)').order('created_at', { ascending: false }),
+        supabase.from('reports').select('id,reason,status,created_at,artifacts(title),profiles!user_id(username)').order('created_at', { ascending: false }),
         supabase.from('categories').select('id,name').order('name'),
         supabase.from('reports').select('id,artifact_id,reason,artifacts(id,title,status)').eq('status', 'Open').order('created_at', { ascending: false }),
         supabase.from('artifacts').select('created_at').gte('created_at', cutoffStr),
