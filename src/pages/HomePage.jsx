@@ -157,6 +157,7 @@ export function HomePage({ user }) {
   }, [loadWallPosts])
 
   const openArtifact = useCallback((id) => {
+    window.scrollTo(0, 0)
     if (!id || String(id).startsWith('fallback-')) { navigate('/catalog'); return }
     navigate(`/artifact/${id}`)
   }, [navigate])
@@ -170,6 +171,20 @@ export function HomePage({ user }) {
     }
     return picks
   }, [previewItems.length])
+
+  const quickJumpItems = useMemo(() => {
+    const pool = [...previewItems]
+    const picks = []
+    while (picks.length < 3 && pool.length) {
+      const idx = Math.floor(Math.random() * pool.length)
+      picks.push(pool.splice(idx, 1)[0])
+    }
+    return picks
+  }, [previewItems.length])
+
+  const recentEntries = useMemo(() => (
+    [...previewItems].slice(0, 3).reverse()
+  ), [previewItems])
 
   const openRandomCase = () => {
     const pool = previewItems.filter((i) => !String(i.id).startsWith('fallback-'))
@@ -251,18 +266,18 @@ export function HomePage({ user }) {
           We catalog what the internet forgets.
         </p>
         <nav className="home-masthead-nav" aria-label="Site navigation">
-          <Link className="home-cta-link" to="/catalog">Browse Archive</Link>
+          <Link className="home-cta-link" to="/catalog" onClick={() => window.scrollTo(0, 0)}>Browse Archive</Link>
           {!user ? (
-            <Link className="home-cta-link home-cta-join" to="/auth?mode=register">Join the Investigation</Link>
+            <Link className="home-cta-link home-cta-join" to="/auth?mode=register" onClick={() => window.scrollTo(0, 0)}>Join the Investigation</Link>
           ) : (
-            <Link className="home-cta-link" to="/dashboard">My Files</Link>
+            <Link className="home-cta-link" to="/dashboard" onClick={() => window.scrollTo(0, 0)}>My Files</Link>
           )}
-          <Link className="home-cta-link" to={user ? '/post' : '/auth?intent=post'}>File a Case</Link>
+          <Link className="home-cta-link" to={user ? '/post' : '/auth?intent=post'} onClick={() => window.scrollTo(0, 0)}>File a Case</Link>
           <Link className="home-cta-link" to="/catalog" onClick={(e) => { e.preventDefault(); openRandomCase() }}>
             Random Case
           </Link>
           {!user ? (
-            <Link className="home-cta-link" to="/auth">Sign In</Link>
+            <Link className="home-cta-link" to="/auth" onClick={() => window.scrollTo(0, 0)}>Sign In</Link>
           ) : null}
         </nav>
       </div>
@@ -271,7 +286,13 @@ export function HomePage({ user }) {
       {previewItems.length > 0 && (
         <div className="home-signal-bar" aria-label="Currently active case">
           <span className="home-signal-label">Active Case</span>
-          <span className="home-signal-text">{previewItems[0]?.title ?? '...'}</span>
+          <Link
+            className="home-signal-text"
+            to={String(previewItems[0]?.id).startsWith('fallback-') ? '/catalog' : `/artifact/${previewItems[0]?.id}`}
+            onClick={() => window.scrollTo(0, 0)}
+          >
+            {previewItems[0]?.title ?? '...'}
+          </Link>
         </div>
       )}
 
@@ -282,7 +303,7 @@ export function HomePage({ user }) {
         <section className="home-blog-main stack-gap" id="browse">
           <div className="home-section-head">
             <h3>Case Files</h3>
-            <Link to="/catalog">Full archive →</Link>
+            <Link to="/catalog" onClick={() => window.scrollTo(0, 0)}>Full archive →</Link>
           </div>
 
           {/* GSAP card swap deck */}
@@ -335,7 +356,7 @@ export function HomePage({ user }) {
             <h3>Recent Entries</h3>
           </div>
           <div className="home-blog-posts">
-            {previewItems.slice(0, 6).map((entry) => (
+            {recentEntries.map((entry) => (
               <article key={entry.id} className="home-blog-post">
                 <div className="home-blog-post-header">
                   <span className="category-stamp">{entry.category_name || 'Unsorted'}</span>
@@ -349,7 +370,7 @@ export function HomePage({ user }) {
                     {entry.title}
                   </button>
                 </h2>
-                <p className="meta-line" style={{ margin: '0.15rem 0 0.45rem' }}>by {entry.username || 'unknown'} · {entry.vote_score ?? 0} pts</p>
+                <p className="meta-line" style={{ margin: '0.15rem 0 0.45rem' }}>by {entry.username || 'unknown'} · {entry.vote_score ?? 0} votes</p>
                 <p className="home-blog-post-excerpt">
                   {entry.description?.slice(0, 220) || 'No summary yet.'}
                   {(entry.description?.length ?? 0) > 220 ? '…' : ''}
@@ -393,7 +414,7 @@ export function HomePage({ user }) {
             </div>
             <p className="meta-line">Recently filed cases.</p>
             <div className="home-mini-feed">
-              {previewItems.slice(0, 5).map((item) => (
+              {quickJumpItems.map((item) => (
                 <button
                   key={item.id}
                   type="button"
@@ -507,17 +528,17 @@ export function HomePage({ user }) {
         <section>
           <h4>About the Archive</h4>
           <ul>
-            <li><Link to="/homepage#about">Mission</Link></li>
-            <li><Link to="/catalog">Browse all cases</Link></li>
-            <li><Link to="/auth">Join community</Link></li>
+            <li><Link to="/about" onClick={() => window.scrollTo(0, 0)}>Mission</Link></li>
+            <li><Link to="/catalog" onClick={() => window.scrollTo(0, 0)}>Browse all cases</Link></li>
+            <li><Link to="/auth" onClick={() => window.scrollTo(0, 0)}>Join community</Link></li>
           </ul>
         </section>
         <section>
           <h4>Support</h4>
           <ul>
-            <li><Link to="/auth">Account access</Link></li>
-            <li><Link to="/catalog">Search the archive</Link></li>
-            <li><Link to="/post">Submit a case</Link></li>
+            <li><Link to="/auth" onClick={() => window.scrollTo(0, 0)}>Account access</Link></li>
+            <li><Link to="/catalog" onClick={() => window.scrollTo(0, 0)}>Search the archive</Link></li>
+            <li><Link to="/post" onClick={() => window.scrollTo(0, 0)}>Submit a case</Link></li>
           </ul>
         </section>
         <section>

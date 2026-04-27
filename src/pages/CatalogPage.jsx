@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { formatError, logError } from '../lib/errorUtils'
 import { supabase } from '../lib/supabase'
 
-const pageSize = 10
+const pageSize = 5
 
 const mockFeedRows = [
   {

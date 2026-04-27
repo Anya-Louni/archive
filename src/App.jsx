@@ -12,6 +12,7 @@ import { PostPage } from './pages/PostPage'
 import { HomePage } from './pages/HomePage'
 import { CatalogPage } from './pages/CatalogPage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { AboutPage } from './pages/AboutPage'
 
 const INIT_TIMEOUT_MS = 12000
 const INIT_RETRIES = 1
@@ -213,6 +214,7 @@ export default function App() {
             </AdminRoute>
           }
         />
+        <Route path="/about" element={<AboutPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AppShell>

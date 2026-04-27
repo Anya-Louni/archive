@@ -100,11 +100,11 @@ export function ProfilePage({ user }) {
     setNotice('')
     try {
       const { error: uploadError } = await supabase.storage
-        .from('avatar')
+        .from('avatars')
         .upload(user.id, file, { upsert: true, contentType: file.type })
       if (uploadError) throw uploadError
 
-      const { data: { publicUrl } } = supabase.storage.from('avatar').getPublicUrl(user.id)
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(user.id)
       const urlWithBust = `${publicUrl}?t=${Date.now()}`
 
       const { error: updateError } = await supabase.auth.updateUser({ data: { avatar_url: urlWithBust } })

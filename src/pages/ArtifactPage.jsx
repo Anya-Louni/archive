@@ -73,6 +73,28 @@ export function ArtifactPage({ user }) {
   const isAdmin = useMemo(() => Boolean(user?.is_admin), [user])
   const canModerate = useMemo(() => Boolean((isOwner || isAdmin) && !user?.is_banned), [isOwner, isAdmin, user])
 
+  const mediaUrls = useMemo(() => {
+    if (!artifact?.media_url) return []
+    if (artifact.media_url.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(artifact.media_url)
+        if (Array.isArray(parsed)) return parsed
+      } catch {}
+    }
+    return [artifact.media_url]
+  }, [artifact?.media_url])
+
+  const sourceLinkUrls = useMemo(() => {
+    if (!artifact?.source_link) return []
+    if (artifact.source_link.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(artifact.source_link)
+        if (Array.isArray(parsed)) return parsed
+      } catch {}
+    }
+    return [artifact.source_link]
+  }, [artifact?.source_link])
+
   async function load() {
     setNotice('')
     try {
@@ -392,21 +414,56 @@ export function ArtifactPage({ user }) {
 
             <p style={{ lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{artifact.description}</p>
 
-            {artifact.source_link ? (
-              <p style={{ marginTop: '0.7rem' }}>
-                <strong>Source:</strong>{' '}
-                <a href={artifact.source_link} target="_blank" rel="noreferrer" style={{ wordBreak: 'break-all' }}>
-                  {artifact.source_link}
-                </a>
-              </p>
+            {sourceLinkUrls.length > 0 ? (
+              sourceLinkUrls.length === 1 ? (
+                <p style={{ marginTop: '0.7rem' }}>
+                  <strong>Source:</strong>{' '}
+                  <a href={sourceLinkUrls[0]} target="_blank" rel="noreferrer" style={{ wordBreak: 'break-all' }}>
+                    {sourceLinkUrls[0]}
+                  </a>
+                </p>
+              ) : (
+                <div style={{ marginTop: '0.7rem' }}>
+                  <strong>Sources ({sourceLinkUrls.length}):</strong>
+                  <ul style={{ margin: '0.3rem 0 0', paddingLeft: '1.2rem', display: 'grid', gap: '0.2rem' }}>
+                    {sourceLinkUrls.map((url, i) => (
+                      <li key={i}>
+                        <a href={url} target="_blank" rel="noreferrer" style={{ wordBreak: 'break-all' }}>
+                          {url}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )
             ) : null}
-            {artifact.media_url ? (
-              <p style={{ marginTop: '0.5rem' }}>
-                <strong>Media:</strong>{' '}
-                <a href={artifact.media_url} target="_blank" rel="noreferrer" style={{ wordBreak: 'break-all' }}>
-                  {artifact.media_url}
-                </a>
-              </p>
+            {mediaUrls.length > 0 ? (
+              artifact.media_url.startsWith('[') ? (
+                <div style={{ marginTop: '0.8rem' }}>
+                  <strong style={{ display: 'block', marginBottom: '0.45rem' }}>
+                    Media{mediaUrls.length > 1 ? ` (${mediaUrls.length})` : ''}
+                  </strong>
+                  <div className="artifact-media-grid">
+                    {mediaUrls.map((url, i) => (
+                      <a key={i} href={url} target="_blank" rel="noreferrer">
+                        <img
+                          src={url}
+                          alt={`Media ${i + 1}`}
+                          className="artifact-media-thumb"
+                          onError={(e) => { e.currentTarget.style.display = 'none' }}
+                        />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p style={{ marginTop: '0.5rem' }}>
+                  <strong>Media:</strong>{' '}
+                  <a href={mediaUrls[0]} target="_blank" rel="noreferrer" style={{ wordBreak: 'break-all' }}>
+                    {mediaUrls[0]}
+                  </a>
+                </p>
+              )
             ) : null}
 
             {/* Report button */}
@@ -580,7 +637,7 @@ export function ArtifactPage({ user }) {
                             <button type="button" title="Downvote" aria-label="Downvote analysis" onClick={() => voteAnalysis(a.id, -1)}>▼</button>
                           </>
                         ) : (
-                          <span className="vote-score">{a.vote_score ?? 0} pts</span>
+                          <span className="vote-score">{a.vote_score ?? 0} votes</span>
                         )}
                       </div>
                       <span className="comment-author">{a.profiles?.username ?? 'unknown'}</span>
