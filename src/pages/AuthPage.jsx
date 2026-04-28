@@ -20,6 +20,23 @@ export function AuthPage() {
     return () => { if (cooldownRef.current) clearInterval(cooldownRef.current) }
   }, [])
 
+  useEffect(() => {
+    let active = true
+
+    const redirectIfSignedIn = async () => {
+      const { data } = await supabase.auth.getSession()
+      if (!active || !data.session?.user) return
+
+      navigate(intent === 'post' ? '/post' : '/dashboard', { replace: true })
+    }
+
+    redirectIfSignedIn()
+
+    return () => {
+      active = false
+    }
+  }, [intent, navigate])
+
   const startCooldown = (seconds = 60) => {
     setCooldown(seconds)
     cooldownRef.current = setInterval(() => {
@@ -44,15 +61,22 @@ export function AuthPage() {
     setLoading(true)
 
     try {
+      const email = form.email.trim().toLowerCase()
+      const username = form.username.trim()
+
       if (mode === 'register') {
+        if (!username) {
+          throw new Error('Please choose a username.')
+        }
+
         if (form.password !== form.confirmPassword) {
           throw new Error('Password confirmation does not match.')
         }
 
         const { error: signError } = await supabase.auth.signUp({
-          email: form.email,
+          email,
           password: form.password,
-          options: { data: { username: form.username } },
+          options: { data: { username } },
         })
         if (signError) throw signError
 
@@ -61,12 +85,12 @@ export function AuthPage() {
         setMode('login')
         setForm({ email: '', password: '', confirmPassword: '', username: '' })
       } else if (mode === 'reset') {
-        if (!form.email.trim()) {
+        if (!email) {
           throw new Error('Please enter your email address.')
         }
 
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(form.email, {
-          redirectTo: `${window.location.origin}/auth?mode=update-password`,
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth/update-password`,
         })
         if (resetError) throw resetError
 
@@ -75,8 +99,12 @@ export function AuthPage() {
         setMode('login')
         setForm({ email: '', password: '', confirmPassword: '', username: '' })
       } else {
+        if (!email || !form.password.trim()) {
+          throw new Error('Please enter both email and password.')
+        }
+
         const { data, error: loginError } = await supabase.auth.signInWithPassword({
-          email: form.email,
+          email,
           password: form.password,
         })
         if (loginError) throw loginError
@@ -109,13 +137,13 @@ export function AuthPage() {
         {mode === 'register' && (
           <label>
             Username *
-            <input required value={form.username} onChange={(e) => update('username', e.target.value)} />
+            <input required autoComplete="username" value={form.username} onChange={(e) => update('username', e.target.value)} />
           </label>
         )}
 
         <label>
           Email *
-          <input required type="email" value={form.email} onChange={(e) => update('email', e.target.value)} />
+          <input required autoComplete="email" type="email" value={form.email} onChange={(e) => update('email', e.target.value)} />
         </label>
 
         {mode !== 'reset' && (
@@ -123,7 +151,7 @@ export function AuthPage() {
             <label>
               Password *
               <div className="password-field">
-                <input required minLength={6} type={passwordType} value={form.password} onChange={(e) => update('password', e.target.value)} />
+                <input required autoComplete={mode === 'login' ? 'current-password' : 'new-password'} minLength={6} type={passwordType} value={form.password} onChange={(e) => update('password', e.target.value)} />
                 <span
                   className="eye-toggle"
                   onClick={() => setShowPassword((v) => !v)}
@@ -159,7 +187,7 @@ export function AuthPage() {
               <label>
                 Confirm Password *
                 <div className="password-field">
-                  <input required minLength={6} type={passwordType} value={form.confirmPassword} onChange={(e) => update('confirmPassword', e.target.value)} />
+                  <input required autoComplete="new-password" minLength={6} type={passwordType} value={form.confirmPassword} onChange={(e) => update('confirmPassword', e.target.value)} />
                   <span
                     className="eye-toggle"
                     onClick={() => setShowPassword((v) => !v)}

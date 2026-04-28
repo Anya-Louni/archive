@@ -713,15 +713,22 @@ order by p.created_at asc;
 
 grant select on public.wall_posts_with_cheers to anon, authenticated;
 
--- Wall posts: tighten RLS so anonymous (unauthenticated) callers cannot post
--- even if is_not_banned returns false for null uid, be explicit
+-- Wall posts: allow authenticated posts from the owner, and allow anonymous posts
+-- with a guest-generated alias while keeping the row user_id null.
 drop policy if exists "Users can insert wall posts" on public.wall_posts;
 create policy "Users can insert wall posts" on public.wall_posts
   for insert
   with check (
-    auth.uid() is not null
-    and auth.uid() = user_id
-    and public.is_not_banned(auth.uid())
+    (
+      auth.uid() is not null
+      and auth.uid() = user_id
+      and public.is_not_banned(auth.uid())
+    )
+    or (
+      auth.uid() is null
+      and user_id is null
+      and alias ~ '^anonymous[0-9]{3,}(-[a-z]+-[a-z]+)?$'
+    )
   );
 
 -- Reports: allow users to see their own submitted reports (not just admins)

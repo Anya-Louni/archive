@@ -71,11 +71,11 @@ function generateAnonymousUsername(existingAliases = new Set()) {
   for (let i = 0; i < 12; i += 1) {
     const adjective = anonAdjectives[Math.floor(Math.random() * anonAdjectives.length)]
     const noun = anonNouns[Math.floor(Math.random() * anonNouns.length)]
-    const suffix = Math.floor(1000 + Math.random() * 9000)
-    const candidate = `anon-${adjective}-${noun}-${suffix}`
+    const suffix = Math.floor(100 + Math.random() * 900)
+    const candidate = `anonymous${suffix}-${adjective}-${noun}`
     if (!existingAliases.has(candidate)) return candidate
   }
-  return `anon-${Math.random().toString(36).slice(2, 10)}`
+  return `anonymous${Math.floor(100 + Math.random() * 900)}`
 }
 
 function getDailyFact() {
@@ -127,7 +127,18 @@ export function HomePage({ user }) {
   const [wallError, setWallError] = useState('')
   const dailyFact = useMemo(() => getDailyFact(), [])
   const wallListRef = useRef(null)
-  const wallChannelRef = useRef(null)
+  const [anonymousAlias] = useState(() => {
+    if (user) return ''
+    if (typeof window === 'undefined') return generateAnonymousUsername()
+
+    const storageKey = 'echo-chamber-anonymous-alias'
+    const existingAlias = window.sessionStorage.getItem(storageKey)
+    if (existingAlias) return existingAlias
+
+    const nextAlias = generateAnonymousUsername()
+    window.sessionStorage.setItem(storageKey, nextAlias)
+    return nextAlias
+  })
 
   const userCheers = useMemo(() => new Set(wallPosts.filter((p) => p.cheered_by_user).map((p) => p.id)), [wallPosts])
 
@@ -195,11 +206,15 @@ export function HomePage({ user }) {
   const submitWallPost = async () => {
     const nextText = wallText.trim()
     if (!nextText) return
-    if (!user) { setWallError('Sign in to post to the wall.'); return }
     setWallError('')
     const { error } = await supabase
       .from('wall_posts')
-      .insert({ user_id: user.id, alias: user.username, text: nextText.slice(0, 280), reply_to: replyToId })
+      .insert({
+        user_id: user?.id ?? null,
+        alias: user?.username ?? anonymousAlias,
+        text: nextText.slice(0, 280),
+        reply_to: replyToId,
+      })
       .select().single()
     if (error) { console.error('Wall post error:', error); setWallError(error.message); return }
     setWallText('')
@@ -225,17 +240,19 @@ export function HomePage({ user }) {
   const cancelReply = () => setReplyToId(null)
 
   useEffect(() => {
-    const wallChannel = supabase
-      .channel('community-wall-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'wall_posts' }, () => {
-        loadWallPosts()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'wall_post_cheers' }, () => {
-        loadWallPosts()
-      })
-      .subscribe()
-    wallChannelRef.current = wallChannel
-    return () => { wallChannelRef.current = null; supabase.removeChannel(wallChannel) }
+    const refreshWallPosts = async () => {
+      try {
+        await loadWallPosts()
+      } catch (error) {
+        console.warn('Wall feed refresh failed:', error)
+      }
+    }
+
+    const intervalId = window.setInterval(refreshWallPosts, 15000)
+
+    return () => {
+      window.clearInterval(intervalId)
+    }
   }, [loadWallPosts])
 
   useEffect(() => {
@@ -276,9 +293,6 @@ export function HomePage({ user }) {
           <Link className="home-cta-link" to="/catalog" onClick={(e) => { e.preventDefault(); openRandomCase() }}>
             Random Case
           </Link>
-          {!user ? (
-            <Link className="home-cta-link" to="/auth" onClick={() => window.scrollTo(0, 0)}>Sign In</Link>
-          ) : null}
         </nav>
       </div>
 
@@ -507,18 +521,15 @@ export function HomePage({ user }) {
             value={wallText}
             onChange={(e) => setWallText(e.target.value)}
             maxLength={280}
-            placeholder={user ? 'Say anything unrelated to cases…' : 'Sign in to post to the wall.'}
-            disabled={!user}
+            placeholder={user ? 'Say anything unrelated to cases…' : `Post as ${anonymousAlias || 'anonymous'}`}
             aria-label="Write a wall post"
           />
           <div className="post-box-actions">
-            <button type="button" disabled={!user || !wallText.trim()} onClick={submitWallPost}>
+            <button type="button" disabled={!wallText.trim()} onClick={submitWallPost}>
               Post to wall
             </button>
             <small className="meta-line">{wallText.length}/280</small>
-            {!user ? (
-              <Link className="stamp-button" to="/auth" style={{ marginLeft: 'auto' }}>Sign in to post</Link>
-            ) : null}
+            {!user ? <small className="meta-line" style={{ marginLeft: 'auto' }}>Posting as @{anonymousAlias || 'anonymous'}</small> : null}
           </div>
         </div>
       </section>
