@@ -19,17 +19,6 @@ const INIT_RETRIES = 1
 
 function ProtectedRoute({ user, children }) {
   if (!user) return <Navigate to="/auth" replace />
-  if (!user.email_confirmed_at) {
-    return (
-      <div className="card" style={{ margin: '2rem', padding: '2rem' }}>
-        <h2>Email Verification Required</h2>
-        <p className="meta-line">
-          Please verify your email address before accessing this feature.
-        </p>
-        <p className="meta-line">Check your email for a verification link.</p>
-      </div>
-    )
-  }
   return children
 }
 

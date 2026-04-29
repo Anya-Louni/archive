@@ -77,12 +77,12 @@ export function AuthPage() {
         const { error: signError } = await supabase.auth.signUp({
           email,
           password: form.password,
-          options: { emailRedirectTo: `${window.location.origin}/auth`, data: { username } },
+          options: { data: { username } },
         })
         if (signError) throw signError
 
         startCooldown(60)
-        setNotice('Registration successful. Please verify your email before login.')
+        setNotice('Registration successful. You can sign in right away.')
         setMode('login')
         setForm({ email: '', password: '', confirmPassword: '', username: '' })
       } else if (mode === 'reset') {
@@ -109,11 +109,6 @@ export function AuthPage() {
           password: form.password,
         })
         if (loginError) throw loginError
-
-        if (!data.user?.email_confirmed_at) {
-          await supabase.auth.signOut()
-          throw new Error('Please verify your email first, then login.')
-        }
 
         navigate(intent === 'post' ? '/post' : '/')
       }
@@ -225,11 +220,6 @@ export function AuthPage() {
 
         {error ? <p className="error-inline">{error}</p> : null}
         {notice ? <p>{notice}</p> : null}
-        {mode === 'register' ? (
-          <p className="meta-line" style={{ fontSize: '0.82rem', marginTop: '0.35rem' }}>
-            Registration sends a verification email. If delivery fails, check the Supabase Auth email/SMTP settings.
-          </p>
-        ) : null}
 
         <button className="stamp-button" disabled={loading || cooldown > 0}>
           {loading ? 'Processing...' : cooldown > 0 ? `Try again in ${cooldown}s` : mode === 'login' ? 'Login' : mode === 'register' ? 'Create Account' : 'Send Reset Link'}
