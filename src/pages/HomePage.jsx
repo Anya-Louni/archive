@@ -285,7 +285,7 @@ export function HomePage({ user }) {
         <nav className="home-masthead-nav" aria-label="Site navigation">
           <Link className="home-cta-link" to="/catalog" onClick={() => window.scrollTo(0, 0)}>Browse Archive</Link>
           {!user ? (
-            <Link className="home-cta-link home-cta-join" to="/auth?mode=register" onClick={() => window.scrollTo(0, 0)}>Join the Investigation</Link>
+            <Link className="home-cta-link" to="/auth?mode=register" onClick={() => window.scrollTo(0, 0)}>Join the Investigation</Link>
           ) : (
             <Link className="home-cta-link" to="/dashboard" onClick={() => window.scrollTo(0, 0)}>My Files</Link>
           )}

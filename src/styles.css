@@ -1930,19 +1930,6 @@ button.danger {
   color: var(--evidence-red);
 }
 
-.home-masthead-nav .home-cta-join {
-  color: #8b3a20;
-  text-decoration-color: rgba(139,58,32,0.45);
-}
-
-.home-masthead-nav .home-cta-join:hover,
-.home-masthead-nav .home-cta-join:focus-visible {
-  background: linear-gradient(180deg, #9a6040 0%, #723824 100%);
-  border-color: #5a2a18;
-  color: #ffddb8;
-  text-decoration-color: transparent;
-}
-
 /* ─── Homepage social widget ─── */
 
 .home-social-glyph {
