@@ -92,7 +92,7 @@ export function AppShell({ user, badgeLabels, onLogout, children }) {
                     </div>
                   ) : (
                     <div className="auth-nav">
-                      <Link className="auth-link" to="/auth">[ Sign In ]</Link>
+                      <Link className="auth-link" to="/auth">Sign In</Link>
                       <Link className="nav-join-btn" to="/auth?mode=register">Register</Link>
                     </div>
                   )}
