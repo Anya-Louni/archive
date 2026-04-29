@@ -1906,17 +1906,18 @@ button.danger {
   color: var(--evidence-red);
 }
 
-/* Masthead nav: button-style links matching the archive controls */
+/* Masthead nav: text links that reveal button shape on hover */
 .home-masthead-nav .home-cta-link {
-  font-size: 1rem;
-  padding: 0.72rem 1.45rem;
-  min-height: 2.8rem;
-  background: linear-gradient(180deg, #fff8e0 0%, #e8d0a0 100%);
-  border-color: #8b6b4a;
-  box-shadow: 2px 2px 0 rgba(58,36,16,0.22);
-  text-decoration: none;
-  text-underline-offset: 0;
-  transition: transform 0.13s ease, box-shadow 0.13s ease, color 0.13s ease;
+  font-size: 1.12rem;
+  padding: 0.84rem 2.25rem;
+  min-height: 3.2rem;
+  background: none;
+  border-color: transparent;
+  box-shadow: none;
+  text-decoration: underline;
+  text-decoration-color: rgba(79,52,38,0.4);
+  text-underline-offset: 3px;
+  transition: background 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease, text-decoration-color 0.14s ease;
 }
 
 .home-masthead-nav .home-cta-link:hover,
@@ -1924,8 +1925,22 @@ button.danger {
   background: linear-gradient(180deg, #fff8e0 0%, #e8d0a0 100%);
   border-color: #8b6b4a;
   box-shadow: 2px 2px 0 rgba(58,36,16,0.22);
+  text-decoration-color: transparent;
   transform: translate(-1px, -1px);
   color: var(--evidence-red);
+}
+
+.home-masthead-nav .home-cta-join {
+  color: #8b3a20;
+  text-decoration-color: rgba(139,58,32,0.45);
+}
+
+.home-masthead-nav .home-cta-join:hover,
+.home-masthead-nav .home-cta-join:focus-visible {
+  background: linear-gradient(180deg, #9a6040 0%, #723824 100%);
+  border-color: #5a2a18;
+  color: #ffddb8;
+  text-decoration-color: transparent;
 }
 
 /* ─── Homepage social widget ─── */
