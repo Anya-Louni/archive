@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { formatError } from '../lib/errorUtils'
 
 export function AuthPage() {
   const [searchParams] = useSearchParams()
@@ -76,7 +77,7 @@ export function AuthPage() {
         const { error: signError } = await supabase.auth.signUp({
           email,
           password: form.password,
-          options: { data: { username } },
+          options: { emailRedirectTo: `${window.location.origin}/auth`, data: { username } },
         })
         if (signError) throw signError
 
@@ -121,7 +122,7 @@ export function AuthPage() {
         setError('Too many requests. Please wait a minute and try again.')
         startCooldown(60)
       } else {
-        setError(e.message)
+        setError(formatError(e))
       }
     } finally {
       setLoading(false)
@@ -224,6 +225,11 @@ export function AuthPage() {
 
         {error ? <p className="error-inline">{error}</p> : null}
         {notice ? <p>{notice}</p> : null}
+        {mode === 'register' ? (
+          <p className="meta-line" style={{ fontSize: '0.82rem', marginTop: '0.35rem' }}>
+            Registration sends a verification email. If delivery fails, check the Supabase Auth email/SMTP settings.
+          </p>
+        ) : null}
 
         <button className="stamp-button" disabled={loading || cooldown > 0}>
           {loading ? 'Processing...' : cooldown > 0 ? `Try again in ${cooldown}s` : mode === 'login' ? 'Login' : mode === 'register' ? 'Create Account' : 'Send Reset Link'}

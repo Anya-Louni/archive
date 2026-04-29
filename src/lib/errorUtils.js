@@ -14,6 +14,17 @@ export function formatError(error) {
   // Supabase error
   if (error.message) {
     // Hide technical details from users
+    const message = error.message.toLowerCase()
+
+    if (message.includes('error sending confirmation email')) {
+      return 'Supabase could not send the confirmation email. Check your project’s Auth email/SMTP settings or disable email confirmation in the Supabase dashboard.'
+    }
+    if (message.includes('error sending recovery email')) {
+      return 'Supabase could not send the password reset email. Check your project’s Auth email/SMTP settings in the Supabase dashboard.'
+    }
+    if (message.includes('email not confirmed')) {
+      return 'Please verify your email address before signing in.'
+    }
     if (error.message.includes('row-level security')) {
       return 'You do not have permission to perform this action.'
     }
