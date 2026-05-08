@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { BADGE_DEFINITIONS, getBadgeDef } from '../lib/badges'
 
@@ -342,10 +342,10 @@ export function AdminPage() {
             </thead>
             <tbody>
               {users.map((u) => (
-                <>
+                <Fragment key={u.id}>
                   <tr key={u.id}>
                     <td><strong>{u.username}</strong></td>
-                    <td>
+                    <td data-label="Badges">
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.2rem', alignItems: 'center' }}>
                         {(u.badges ?? []).map((b) => {
                           const def = getBadgeDef(b)
@@ -362,10 +362,10 @@ export function AdminPage() {
                         {!(u.badges?.length) ? <span className="meta-line">—</span> : null}
                       </div>
                     </td>
-                    <td>{u.is_admin ? 'Yes' : '—'}</td>
-                    <td>{u.is_banned ? <span style={{ color: '#a12a23', fontWeight: 600 }}>Banned</span> : '—'}</td>
-                    <td>{new Date(u.created_at).toLocaleDateString()}</td>
-                    <td className="actions-cell">
+                    <td data-label="Admin">{u.is_admin ? 'Yes' : '—'}</td>
+                    <td data-label="Banned">{u.is_banned ? <span style={{ color: '#a12a23', fontWeight: 600 }}>Banned</span> : '—'}</td>
+                    <td data-label="Joined">{new Date(u.created_at).toLocaleDateString()}</td>
+                    <td className="actions-cell" data-label="Actions">
                       <button
                         type="button"
                         onClick={() => setBadgeEditUserId(badgeEditUserId === u.id ? null : u.id)}
@@ -446,7 +446,7 @@ export function AdminPage() {
                       </td>
                     </tr>
                   ) : null}
-                </>
+                </Fragment>
               ))}
               {!users.length ? (
                 <tr><td colSpan={6} className="meta-line">No users found.</td></tr>
@@ -474,11 +474,11 @@ export function AdminPage() {
               <tbody>
                 {reports.filter((r) => r.status === 'Open').map((r) => (
                   <tr key={r.id}>
-                    <td>{r.artifacts?.title ?? '—'}</td>
-                    <td>{r.profiles?.username ?? '—'}</td>
-                    <td>{r.reason}</td>
-                    <td>{new Date(r.created_at).toLocaleDateString()}</td>
-                    <td>
+                    <td data-label="Artifact">{r.artifacts?.title ?? '—'}</td>
+                    <td data-label="Reporter">{r.profiles?.username ?? '—'}</td>
+                    <td data-label="Reason">{r.reason}</td>
+                    <td data-label="Date">{new Date(r.created_at).toLocaleDateString()}</td>
+                    <td className="actions-cell" data-label="Action">
                       <button type="button" onClick={() => resolveReport(r.id)}>Resolve</button>
                     </td>
                   </tr>
@@ -511,10 +511,10 @@ export function AdminPage() {
               <tbody>
                 {flaggedArtifacts.map((f) => (
                   <tr key={f.id}>
-                    <td>{f.title}</td>
-                    <td>{f.status}</td>
-                    <td>{f.reason}</td>
-                    <td>
+                    <td data-label="Artifact">{f.title}</td>
+                    <td data-label="Status">{f.status}</td>
+                    <td data-label="Report reason">{f.reason}</td>
+                    <td className="actions-cell" data-label="Action">
                       <button type="button" className="danger" onClick={() => deleteFlaggedArtifact(f.id)}>
                         Delete post
                       </button>

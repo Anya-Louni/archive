@@ -125,6 +125,25 @@ export function HomePage({ user }) {
   const [wallText, setWallText] = useState('')
   const [replyToId, setReplyToId] = useState(null)
   const [wallError, setWallError] = useState('')
+  const [deckSize, setDeckSize] = useState({ width: 560, height: 380 })
+
+  useEffect(() => {
+    function handleResize() {
+      const w = window.innerWidth
+      if (w < 600) {
+        const mobileWidth = Math.max(240, Math.min(320, w - 56))
+        const mobileHeight = Math.round(mobileWidth * 0.68)
+        setDeckSize({ width: mobileWidth, height: mobileHeight })
+      } else if (w < 800) {
+        setDeckSize({ width: 440, height: 300 })
+      } else {
+        setDeckSize({ width: 560, height: 380 })
+      }
+    }
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
   const dailyFact = useMemo(() => getDailyFact(), [])
   const wallListRef = useRef(null)
   const [anonymousAlias] = useState(() => {
@@ -325,9 +344,9 @@ export function HomePage({ user }) {
             <div className="case-deck-wrapper">
               <div className="case-deck-tilt">
                 <CardSwap
-                  width={560}
-                  height={380}
-                  cardDistance={14}
+                  width={deckSize.width}
+                  height={deckSize.height}
+                  cardDistance={deckSize.width < 360 ? 6 : deckSize.width < 500 ? 8 : 14}
                   verticalDistance={0}
                   delay={3000}
                   pauseOnHover

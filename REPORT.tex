@@ -1,0 +1,1341 @@
+﻿\documentclass[12pt,a4paper]{article}
+
+%% ---- Encoding & fonts ----
+%% (fontenc/inputenc omitted: LuaLaTeX handles UTF-8 natively)
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{luacode}
+
+%% ---- Layout ----
+\usepackage{geometry}
+\usepackage{parskip}
+\usepackage{setspace}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{caption}
+
+%% ---- Color & graphics ----
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage[most]{tcolorbox}
+\usepackage{tikz}
+
+%% ---- Typography & sections ----
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{tocloft}
+
+%% ---- Code listings ----
+\usepackage{listings}
+
+%% ---- Links (load last) ----
+\usepackage[hidelinks]{hyperref}
+
+%% ============================================================
+%%  GEOMETRY
+%% ============================================================
+\geometry{top=2.5cm, bottom=2.5cm, left=3cm, right=2.5cm}
+\setstretch{1.15}
+
+%% ============================================================
+%%  COLOUR PALETTE
+%% ============================================================
+\definecolor{nitbrown}{RGB}{68,38,14}
+\definecolor{nitgold}{RGB}{162,122,42}
+\definecolor{nitcream}{RGB}{248,244,236}
+\definecolor{codebg}{RGB}{248,246,242}
+\definecolor{framecolor}{RGB}{175,150,115}
+\definecolor{kwcolor}{RGB}{25,85,185}
+\definecolor{cmtcolor}{RGB}{70,125,55}
+\definecolor{strcolor}{RGB}{165,35,35}
+\definecolor{numcolor}{RGB}{130,130,130}
+\definecolor{sectionrule}{RGB}{68,38,14}
+\definecolor{calloutbg}{RGB}{252,249,243}
+\definecolor{calloutframe}{RGB}{162,122,42}
+
+%% ============================================================
+%%  TCOLORBOX PRESETS
+%% ============================================================
+\tcbset{
+  principlesbox/.style={
+    colback=calloutbg,
+    colframe=calloutframe,
+    boxrule=0.8pt,
+    arc=3pt,
+    left=10pt, right=10pt,
+    top=8pt, bottom=8pt,
+    fonttitle=\small\bfseries\color{nitbrown},
+    attach boxed title to top left={yshift=-2mm, xshift=6mm},
+    boxed title style={colback=calloutframe, arc=2pt, boxrule=0pt,
+      left=4pt, right=4pt, top=2pt, bottom=2pt},
+  }
+}
+
+%% ============================================================
+%%  CODE LISTING STYLES
+%% ============================================================
+\lstdefinestyle{sql}{
+  language=SQL,
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{kwcolor}\bfseries,
+  commentstyle=\color{cmtcolor}\itshape,
+  stringstyle=\color{strcolor},
+  numberstyle=\tiny\color{numcolor},
+  numbers=left,
+  numbersep=8pt,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{framecolor},
+  showstringspaces=false,
+  tabsize=2,
+  captionpos=b,
+}
+
+\lstdefinestyle{plain}{
+  language={},
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\footnotesize,
+  numbers=none,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{framecolor},
+  showstringspaces=false,
+  tabsize=2,
+  captionpos=b,
+}
+
+%% ============================================================
+%%  SECTION FORMATTING
+%% ============================================================
+\titleformat{\section}
+  {\large\bfseries\color{nitbrown}}
+  {\thesection}{1em}{}
+  [\vspace{2pt}\color{sectionrule}\titlerule[0.6pt]]
+
+\titleformat{\subsection}
+  {\normalsize\bfseries}
+  {\thesubsection}{1em}{}
+
+\titlespacing*{\section}{0pt}{20pt}{9pt}
+\titlespacing*{\subsection}{0pt}{12pt}{4pt}
+
+%% ============================================================
+%%  HEADER / FOOTER
+%% ============================================================
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textit{Internet Artifact Archive}}
+\fancyhead[R]{\small\textit{Web Development Project Report}}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+%% ============================================================
+%%  TABLE OF CONTENTS
+%% ============================================================
+\setlength{\cftbeforesecskip}{4pt}
+\renewcommand{\cftsecfont}{\bfseries}
+\renewcommand{\cftsecpagefont}{\bfseries}
+
+%% ============================================================
+%%  MISCELLANEOUS
+%% ============================================================
+\captionsetup{font=small, labelfont=bf}
+\setlist[itemize]{itemsep=2pt, topsep=4pt}
+\setlist[description]{itemsep=3pt, topsep=4pt}
+
+%% ============================================================
+%%  EMBEDDED LOGO  (written to disk at compile time by Lua)
+%% ============================================================
+\begin{luacode*}
+local lookup = {}
+local b64chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+for i = 1, #b64chars do lookup[b64chars:sub(i,i)] = i-1 end
+
+local function b64decode(s)
+  s = s:gsub('[^A-Za-z0-9+/=]', '')
+  local out = {}
+  local i = 1
+  while i <= #s - 3 do
+    local a = lookup[s:sub(i,i)] or 0
+    local b = lookup[s:sub(i+1,i+1)] or 0
+    local c = s:sub(i+2,i+2)
+    local d = s:sub(i+3,i+3)
+    local cv = (c == '=') and 0 or (lookup[c] or 0)
+    local dv = (d == '=') and 0 or (lookup[d] or 0)
+    local n = a*262144 + b*4096 + cv*64 + dv
+    out[#out+1] = string.char(math.floor(n/65536))
+    if c ~= '=' then out[#out+1] = string.char(math.floor(n/256)%256) end
+    if d ~= '=' then out[#out+1] = string.char(n%256) end
+    i = i + 4
+  end
+  return table.concat(out)
+end
+
+local b64data = [[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]]
+
+local f = io.open('nit_logo.png', 'wb')
+if f then f:write(b64decode(b64data)); f:close() end
+\end{luacode*}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% ============================================================
+%%  TITLE PAGE
+%% ============================================================
+%% \newgeometry MUST come before \begin{titlepage} — placing it
+%% inside the environment triggers a second \clearpage, producing
+%% a blank page before the cover.
+\newgeometry{top=0pt, bottom=0pt, left=0pt, right=0pt,
+             headheight=0pt, headsep=0pt, footskip=0pt}
+\begin{titlepage}
+\thispagestyle{empty}
+{\setlength{\fboxsep}{0pt}\setlength{\parskip}{0pt}\parindent=0pt%
+
+%% --- BAND 1: School identity (cream, 88 mm) ---
+%% Light background so the (dark) NIT logo is fully visible.
+\noindent\colorbox{nitcream}{%
+  \begin{minipage}[c][88mm]{\paperwidth}
+    \centering
+    \IfFileExists{nit_logo.png}{%
+      \includegraphics[height=24mm]{nit_logo.png}\\[5mm]
+    }{%
+      \vspace{29mm}%
+    }%
+    {\fontsize{13.5}{17}\bfseries\color{nitbrown}%
+     \MakeUppercase{Numidia Institute of Technology}}\\[3.5mm]
+    {\normalsize\color{nitbrown!80} Department of Computer Science}\\[3mm]
+    {\small\itshape\color{nitbrown!65}
+      Web Development Project Report
+      \enspace\textbullet\enspace
+      Academic Year 2024--2025}
+  \end{minipage}%
+}%
+%% --- BAND 2: Gold divider (5 mm) ---
+\noindent\colorbox{nitgold}{%
+  \begin{minipage}[c][5mm]{\paperwidth}~\end{minipage}%
+}%
+%% --- BAND 3: Project title (brown, 119 mm) ---
+\noindent\colorbox{nitbrown}{%
+  \begin{minipage}[c][119mm]{\paperwidth}
+    \centering
+    {\color{white}\fontsize{30}{38}\selectfont\bfseries
+     \MakeUppercase{Internet Artifact Archive}\par}
+    \vspace{6mm}
+    {\large\color{white!85!black}\itshape
+     An Archive and Community Investigation Platform\\[2mm]
+     for Forgotten Internet History\par}
+    \vspace{9mm}
+    {\color{nitgold}\rule{105mm}{1.4pt}\par}
+    \vspace{7mm}
+    {\normalsize\color{white!65!black}
+     Adapted from the project brief:
+     \emph{Service \& Product Exchange Platform}\par}
+  \end{minipage}%
+}%
+%% --- BAND 4: Contributors (cream, 85 mm) ---
+\noindent\colorbox{nitcream}{%
+  \begin{minipage}[c][85mm]{\paperwidth}
+    \centering
+    \vspace{4mm}
+    {\color{nitgold}\rule{110mm}{0.8pt}\par}
+    \vspace{8mm}
+    \setlength{\tabcolsep}{14mm}%
+    \begin{tabular}{cc}
+      {\small\bfseries\color{nitbrown} Submitted by} &
+      {\small\bfseries\color{nitbrown} Supervised by} \\[5mm]
+      \begin{tabular}{c}
+        {\small Louni Anya}\\[1.5mm]
+        {\small Bensalem Rayan}
+      \end{tabular} &
+      \begin{tabular}{c}
+        {\small Berghout Yasser Moussa}\\[1.5mm]
+        {\small Kouchi Sana}
+      \end{tabular}
+    \end{tabular}
+    \vspace{8mm}
+    {\color{nitgold}\rule{110mm}{0.8pt}\par}
+    \vspace{7mm}
+    {\normalsize\bfseries\color{nitbrown} Academic Year 2024--2025}
+  \end{minipage}%
+}%
+}% end group
+\end{titlepage}
+\restoregeometry
+
+%% ============================================================
+%%  ABSTRACT
+%% ============================================================
+\newpage
+\thispagestyle{fancy}
+
+\begin{tcolorbox}[
+  colback=calloutbg, colframe=nitgold,
+  boxrule=0.8pt, arc=3pt,
+  title={\bfseries\color{nitbrown} Abstract},
+  fonttitle=\large,
+  left=12pt, right=12pt, top=10pt, bottom=10pt,
+]
+\noindent
+The \textbf{Internet Artifact Archive} is a full-stack web application built to catalog, preserve,
+and collectively investigate forgotten pieces of internet history. Users file structured case
+entries covering lost media, defunct websites, unexplained viral phenomena, and alternate reality
+game fragments. The platform wraps each entry in a living investigation layer: community discussion
+threads, peer-reviewed long-form analyses, chronological event timelines, and a voting system that
+surfaces the most substantiated findings to the top.
+
+\medskip\noindent
+Authentication, role-based access control, content moderation, and all business logic are enforced
+at the database layer through PostgreSQL row-level security policies and server-side triggers,
+making the security model entirely independent of the client application.
+
+\medskip\noindent
+This report covers the full scope of the project: the rationale for the chosen domain, the complete
+technical architecture, a feature-by-feature walkthrough of every implemented requirement, the
+database schema with its entities and relationships, the trigger-based business logic, the security
+model, and the user experience design decisions.
+\end{tcolorbox}
+
+\vspace{0.6cm}
+
+\noindent\textbf{Keywords:} web application, React, Supabase, PostgreSQL, row-level security,
+community platform, digital preservation, internet archive.
+
+\newpage
+\tableofcontents
+\newpage
+
+%% ============================================================
+%%  1. INTRODUCTION
+%% ============================================================
+\section{Introduction}
+
+\subsection{Domain Selection and Rationale}
+
+The project brief specified a \textit{Service and Product Exchange Platform}: a system connecting
+people who request things with people who provide them. At its core, that structure is a publishing
+and matchmaking problem. A user posts something; others respond; a conversation accumulates over
+time. The Internet Artifact Archive applies that exact structure to a domain with a genuine need
+for it: the preservation and community investigation of forgotten internet history.
+
+The internet generates culture faster than any institution can document it. Content disappears
+without warning. Platforms shut down overnight, taking years of community-generated material with
+them. Websites go dark, media files become inaccessible, and entire cultural phenomena persist only
+in partial mirrors and fragmented memory. The Internet Artifact Archive is a structured answer to
+that problem.
+
+The domain maps cleanly onto the brief. A user ``files a case'' by submitting an artifact: a piece
+of lost or unexplained content brought to the community's attention. Other users respond by
+contributing analyses, adding timeline entries, and voting on the quality of the investigation. The
+artifact's status advances as understanding grows. The ``request'' is the open question surrounding
+the artifact; the ``service'' is the collective investigation the community provides.
+
+Choosing this domain over a generic exchange platform was deliberate. Every feature required by
+the brief gains a specific, motivated purpose within an archive context. Status tracking becomes a
+research progress indicator. Filtering by category helps researchers narrow a vast catalog. The
+voting system prioritizes verified or well-sourced findings above speculation. The platform is not
+a demonstration of web application features; it uses those features to solve a real problem.
+
+\subsection{Project Scope}
+
+The Internet Artifact Archive implements all ten requirements of the project brief and extends
+them with community features that make the application genuinely functional as a preservation
+platform. The standard requirements are fully covered: user account management with distinct roles,
+authenticated and authorized access, full CRUD on user-submitted entries, structured data tables
+with sorting and pagination, validated forms with inline error handling, keyword and categorical
+search, a dynamic filtering system, a personal dashboard, and an administrator panel with
+moderation tools.
+
+Beyond the brief, the platform adds community voting with server-enforced score calculation, a
+peer-reviewed analysis system, chronological event timelines per artifact, user-curated
+collections, a real-time community message board with anonymous participation support, and an
+automatic badge system driven entirely by database triggers.
+
+%% ============================================================
+%%  2. SYSTEM ARCHITECTURE
+%% ============================================================
+\section{System Architecture}
+
+\subsection{Technology Stack}
+
+The Internet Artifact Archive is built on a two-layer architecture: a React single-page application
+on the frontend and Supabase as the complete backend infrastructure. There is no Node.js server, no
+Express middleware layer, and no custom REST API. The database communicates directly with the
+browser through PostgREST, an automatic REST interface that Supabase generates from the PostgreSQL
+schema. Access control is governed entirely by row-level security policies defined within the
+database itself.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}p{3.4cm}p{5.6cm}p{2.8cm}@{}}
+\toprule
+\textbf{Layer} & \textbf{Technology} & \textbf{Version} \\
+\midrule
+Frontend framework   & React                       & 18.3.1  \\
+Build tool           & Vite                        & 5.4.10  \\
+Client-side routing  & React Router DOM            & 6.30.0  \\
+Animation library    & GSAP (GreenSock)            & 3.15.0  \\
+Backend / database   & Supabase (PostgreSQL)       & Latest  \\
+Authentication       & Supabase Auth               & Latest  \\
+File storage         & Supabase Storage            & Latest  \\
+Deployment           & Netlify                     & ---     \\
+\bottomrule
+\end{tabular}
+\caption{Full technology stack}
+\end{table}
+
+The decision to use Supabase as the sole backend eliminates an entire infrastructure tier.
+Authentication, file uploads, real-time subscriptions, and database access are all handled through
+a single SDK (\texttt{@supabase/supabase-js} v2.49.4). The frontend focuses entirely on user
+experience, while the database handles every access rule, rate limit, score computation, and badge
+award. No application server can be compromised because no application server exists.
+
+The Supabase anonymous key is intentionally public; its permissions are defined by RLS policies,
+not by keeping it secret. Every operation the client performs runs under the authenticated user's
+identity inside PostgreSQL, where the policies evaluate it.
+
+\subsection{Project Structure}
+
+The repository is organized around three top-level concerns: the React application under
+\texttt{src/}, the static HTML entry point, and the complete database definition under
+\texttt{supabase/}.
+
+\begin{lstlisting}[style=plain, caption={Repository directory layout}]
+echo_chamber/
++-- src/
+|   +-- main.jsx              React entry point
+|   +-- App.jsx               Root component, routing, global auth state
+|   +-- styles.css            Global stylesheet (vintage archive aesthetic)
+|   +-- lib/
+|   |   +-- supabase.js       Supabase client singleton
+|   |   +-- badges.js         Badge definitions and lookup utilities
+|   |   +-- errorUtils.js     Error formatting and safe async wrappers
+|   +-- components/
+|   |   +-- AppShell.jsx      Header, navigation bar, user menu dropdown
+|   |   +-- BadgeDisplay.jsx  Badge chip renderer with overflow handling
+|   |   +-- CardSwap.jsx      GSAP 3D animated card deck component
+|   |   +-- ErrorBoundary.jsx React render error fallback wrapper
+|   +-- pages/
+|       +-- HomePage.jsx      Landing page, community wall, featured artifacts
+|       +-- CatalogPage.jsx   Browse, search, filter, sort, paginate
+|       +-- ArtifactPage.jsx  Full artifact detail, tabs, voting, reports
+|       +-- PostPage.jsx      Submit new artifact with image upload
+|       +-- DashboardPage.jsx Personal user area: stats, artifacts, collections
+|       +-- AdminPage.jsx     Administration panel, charts, user management
+|       +-- AuthPage.jsx      Login, registration, password reset
+|       +-- ProfilePage.jsx   Account settings, avatar, password change
+|       +-- UpdatePasswordPage.jsx  Password reset via email link
+|       +-- AboutPage.jsx     Platform mission and usage guide
+|       +-- NotFoundPage.jsx  404 fallback page
++-- supabase/
+|   +-- schema.sql            Full schema: tables, RLS, triggers, views
+|   +-- seed_mock_posts.sql   Optional demo data for development
+|   +-- verify.sql            Database verification helpers
++-- public/
++-- index.html
++-- vite.config.js
++-- package.json
+\end{lstlisting}
+
+\subsection{Architectural Principles}
+
+\begin{tcolorbox}[principlesbox, title={\color{white}\small Design Principles}]
+\begin{description}[leftmargin=0.3cm, style=nextline, itemsep=6pt, topsep=2pt]
+  \item[\normalfont\bfseries Database as the single authority.]
+    Every business rule lives in PostgreSQL. Rate limits are before-insert triggers. Access
+    restrictions are RLS policies. Score calculations are after-vote triggers. A user who disables
+    JavaScript, inspects and replays network requests, or crafts raw PostgREST calls cannot
+    circumvent any of these rules, because they do not exist in JavaScript.
+
+  \item[\normalfont\bfseries PostgREST as the data interface.]
+    Supabase exposes the PostgreSQL schema as a REST API automatically. The client uses
+    \texttt{.select()}, \texttt{.insert()}, \texttt{.update()}, and \texttt{.delete()} method
+    chains on table and view names, which PostgREST translates into parameterized SQL and executes
+    under the calling user's authenticated identity.
+
+  \item[\normalfont\bfseries Views for flattened reads.]
+    Two PostgreSQL views, \texttt{artifacts\_feed} and \texttt{wall\_posts\_with\_cheers}, flatten
+    the most frequent read patterns into single queries. The catalog page and community wall each
+    query a single view rather than issuing multi-table joins from application code.
+
+  \item[\normalfont\bfseries Serverless, stateless frontend.]
+    The React application holds no server-side state. All persistent data lives in Supabase. The
+    application can be served from any static host and scales horizontally without coordination.
+\end{description}
+\end{tcolorbox}
+
+%% ============================================================
+%%  3. USER ACCOUNT MANAGEMENT
+%% ============================================================
+\section{User Account Management}
+
+\subsection{Registration}
+
+New users register with three fields: an email address, a password, and a username. The application
+calls \texttt{supabase.auth.signUp()} with the email and password, passing the username as
+metadata. Upon successful registration, a trigger on \texttt{auth.users} fires automatically: it
+inserts a corresponding row into the \texttt{profiles} table and awards the new user their first
+badge, ``Case Opened.'' If the requested username conflicts with an existing one, the trigger
+appends a short random numeric suffix to guarantee uniqueness without rejecting the registration.
+
+All three fields are required. The password input is accompanied by a confirmation field; the
+client validates that both values match before submitting to Supabase. Email format validation and
+duplicate address rejection are handled by Supabase Auth. Username uniqueness is enforced by a
+\texttt{UNIQUE} constraint on the \texttt{profiles} table.
+
+\subsection{Login and Logout}
+
+Login accepts an email address and a password, submitted to
+\texttt{supabase.auth.signInWithPassword()}. A successful call returns a session object containing
+a JWT and a refresh token, both stored in the browser's \texttt{localStorage} and managed
+automatically by the SDK. Tokens are refreshed before expiry without any application-level
+handling.
+
+On every page load, \texttt{App.jsx} calls \texttt{supabase.auth.getSession()} to restore an
+existing session, providing a persistent login experience across browser tabs and sessions. The
+component also subscribes to \texttt{supabase.auth.onAuthStateChange()}, which fires whenever a
+session is created, refreshed, or destroyed. The handler fetches the user's profile from the
+\texttt{profiles} table and assembles a combined user object (session data plus profile fields)
+passed as a prop through the component tree.
+
+A 12-second timeout is applied to both the session restoration call and the subsequent profile
+fetch. If either exceeds the limit, the application enters a limited browsing mode, granting read
+access to the public catalog without blocking the entire page on a slow connection.
+
+Logout calls \texttt{supabase.auth.signOut()}, which clears the stored tokens and triggers the
+auth state listener. The UI updates immediately.
+
+\subsection{Profile Management}
+
+Each user has a dedicated profile page at \texttt{/profile}. From there, users can update their
+username (2 to 50 characters) and biography (up to 500 characters). Avatar support is included:
+the user selects an image file (JPEG or PNG, maximum 2 MB), which is uploaded to Supabase Storage
+under a path scoped to their user ID. The resulting public URL is written to the
+\texttt{avatar\_url} column on their profile and displayed in the navigation header.
+
+Profile updates are RLS-restricted: the \texttt{UPDATE} policy checks \texttt{auth.uid() = id},
+ensuring a user can only modify their own row. Administrators bypass this restriction and may edit
+any profile row.
+
+\subsection{Password Management}
+
+Two distinct flows handle password changes. Authenticated users update their password directly from
+the profile page: they enter a new value twice, the client confirms the values match, and the
+application calls \texttt{supabase.auth.updateUser(\{password\})}. No current-password
+verification step is required, as a live session already proves identity.
+
+For forgotten passwords, the login page offers a reset option. The user enters their email address;
+the application calls \texttt{supabase.auth.resetPasswordForEmail(email, \{redirectTo\})} with a
+redirect target of \texttt{/auth/update-password}. Supabase sends a password reset email
+containing a time-limited link. When the user follows the link, \texttt{UpdatePasswordPage.jsx}
+validates the recovery session before rendering the new password form, preventing the page from
+being accessed without a valid reset token. A 60-second cooldown applies to the reset email
+request to limit abuse.
+
+\subsection{Account Deletion}
+
+Users can delete their own account from the profile page. Deletion cascades through the database
+via foreign key constraints: all artifacts, analyses, comments, collections, and votes belonging to
+the user are removed automatically. The \texttt{auth.users} record is deleted through the Supabase
+Admin API, permanently invalidating the credentials.
+
+\subsection{User Roles}
+
+The platform defines three effective permission levels.
+
+\begin{description}[leftmargin=0.3cm]
+  \item[Unauthenticated visitor] Can browse the full catalog, read artifact details, and view the
+    community message board. Cannot create, edit, vote, comment, or report.
+  \item[Registered user] Can submit artifacts, write analyses and comments, add timeline entries,
+    vote on artifacts and analyses, create and manage collections, report content, and post to the
+    community wall. A ban flag on the profile suspends all write access while preserving read
+    access.
+  \item[Administrator] Has unrestricted read and write access to all records. Can edit or delete
+    any artifact regardless of ownership, manage user accounts (ban, unban, manually assign
+    badges), review and resolve content reports, and manage the category list through the admin
+    panel.
+\end{description}
+
+The \texttt{is\_admin} boolean on the \texttt{profiles} table controls administrator privileges.
+A database trigger prevents any non-administrator from setting this flag to \texttt{true} on their
+own or any other profile, even through a direct API call with a crafted request body.
+
+%% ============================================================
+%%  4. AUTHENTICATION AND AUTHORIZATION
+%% ============================================================
+\section{Authentication and Authorization}
+
+\subsection{Session Management}
+
+Supabase Auth manages the full session lifecycle. The JWT issued on sign-in contains the user's
+\texttt{auth.uid()}, which PostgreSQL's RLS system reads on every query to evaluate access
+policies. The SDK handles token refresh transparently; no custom session renewal logic is needed
+in the application.
+
+The root \texttt{App.jsx} component holds the global authentication state. It restores any
+persisted session on mount, subscribes to state changes for the lifetime of the application, and
+provides the assembled user object to every page through props. Pages that need user data read
+from this prop rather than making their own auth calls.
+
+\subsection{Role-Based Access Control}
+
+Access control operates at two levels.
+
+\textbf{Routing layer.} Two React wrapper components gate page access. \texttt{ProtectedRoute}
+checks for a non-null user object and redirects unauthenticated visitors to \texttt{/auth}.
+\texttt{AdminRoute} extends \texttt{ProtectedRoute} and additionally checks the \texttt{is\_admin}
+flag; any authenticated non-administrator is redirected to the home page.
+
+\textbf{Database layer.} RLS policies on every table define exactly what each authenticated
+identity may read, insert, update, and delete. These policies evaluate inside PostgreSQL and
+cannot be bypassed by the client. A representative selection is shown below.
+
+\begin{lstlisting}[style=sql, caption={Representative row-level security policy definitions}]
+-- Public read access on all artifacts
+CREATE POLICY "artifacts_select_all"
+  ON artifacts FOR SELECT USING (true);
+
+-- Only the owner or an admin may update an artifact
+CREATE POLICY "artifacts_update_owner_admin"
+  ON artifacts FOR UPDATE USING (
+    auth.uid() = user_id
+    OR EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND is_admin = true
+    )
+  );
+
+-- Banned users cannot insert new artifacts
+CREATE POLICY "artifacts_insert_authenticated"
+  ON artifacts FOR INSERT WITH CHECK (
+    auth.uid() = user_id
+    AND NOT EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND is_banned = true
+    )
+  );
+
+-- Only admins can read or update content reports
+CREATE POLICY "reports_admin_only"
+  ON reports FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND is_admin = true
+    )
+  );
+\end{lstlisting}
+
+\subsection{Protected Routes}
+
+The following pages require authentication and redirect to \texttt{/auth} when accessed without
+a session.
+
+\begin{itemize}
+  \item \texttt{/post} --- submit a new artifact
+  \item \texttt{/dashboard} --- personal user area
+  \item \texttt{/profile} --- account settings and password management
+\end{itemize}
+
+The \texttt{/admin} page requires both a valid session and the administrator flag. All other pages
+are publicly accessible, though certain interactions on those pages (voting, commenting, cheering)
+require a session and prompt unauthenticated users to sign in.
+
+%% ============================================================
+%%  5. ARTIFACT MANAGEMENT
+%% ============================================================
+\section{Artifact Management}
+\label{sec:artifacts}
+
+Within the Internet Artifact Archive, the ``entries'' described by the project brief take the form
+of \textbf{artifacts}: documented pieces of internet history submitted for community investigation.
+Each artifact functions simultaneously as a catalog entry and a living case file. The relationship
+between the brief's requirements and the platform's implementation is direct: submitting an artifact
+corresponds to posting a request or offer; analyses and comments correspond to provider responses;
+the status field tracks the entry through its lifecycle.
+
+\subsection{Submitting Artifacts}
+
+The submission form at \texttt{/post} collects the fields shown in Table~\ref{tab:fields}.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}p{3cm}p{3.2cm}p{6.3cm}@{}}
+\toprule
+\textbf{Field} & \textbf{Input type} & \textbf{Constraints} \\
+\midrule
+Title           & Text input       & Required, 1--300 characters \\
+Description     & Textarea         & Required, 1--5000 characters \\
+Category        & Select + create  & Required; new categories created inline \\
+Artifact date   & Date picker      & Required \\
+Initial status  & Select           & One of four defined status values \\
+Source links    & Dynamic URL list & Optional; multiple URLs supported \\
+Images          & File upload      & Optional; up to 30 files, 5 MB each \\
+\bottomrule
+\end{tabular}
+\caption{Artifact submission form fields}
+\label{tab:fields}
+\end{table}
+
+Source links are managed through a dynamic form: clicking ``Add link'' appends a new URL input;
+clicking the remove button beside any entry deletes it. The resulting list is serialized as a
+JSON array and stored in the \texttt{source\_link} text column.
+
+Image uploads follow a similar pattern. Each selected file is uploaded individually to Supabase
+Storage under the path \texttt{\{user\_id\}/\{timestamp\}/\{index\}\_\{filename\}}. After all
+uploads complete, the list of public URLs is serialized as a JSON array and stored in
+\texttt{media\_url}. Preview thumbnails render next to each selected file before submission,
+allowing users to review and remove images before they are uploaded.
+
+Category selection includes a live ``create new'' option: if the user types a name not present in
+the existing list, the submission creates the category in the \texttt{categories} table first,
+then assigns the new category to the artifact. This keeps the category taxonomy organic and
+community-driven.
+
+A database-level rate limit prevents abuse: no user may submit more than five artifacts per hour.
+This limit is enforced by a before-insert trigger and cannot be circumvented from the client.
+
+\subsection{Editing Entries}
+
+Owners and administrators can edit any field on an existing artifact from its detail page. The
+form pre-populates with current values. Images and source links can be added or removed
+individually without replacing the full set. Changes are saved with an \texttt{.update()} call
+restricted by an RLS \texttt{UPDATE} policy; the \texttt{updated\_at} timestamp is refreshed
+automatically by a database trigger.
+
+\subsection{Deleting Entries}
+
+Deletion is available to the artifact's owner and to administrators. Selecting the delete action
+from the detail page triggers a confirmation step before committing. The delete operation cascades
+through the database: all associated analyses, comments, timeline entries, votes, and collection
+membership records are removed by foreign key constraints with \texttt{ON DELETE CASCADE}.
+
+\subsection{Viewing Details}
+
+The artifact detail page at \texttt{/artifact/:id} presents the full case file. The upper section
+displays title, category, origin date, current status, author username, and community vote score.
+Below that, a media gallery renders any attached images in a grid layout. A source links section
+lists all submitted URLs as labeled, clickable anchors.
+
+The lower half of the page is divided into three tabs.
+
+\begin{description}[leftmargin=0.3cm]
+  \item[Discussion] The comment thread, ordered chronologically. Registered, non-banned users may
+    add comments up to 1000 characters. A database-level rate limit caps submissions at 20
+    comments per user per hour.
+  \item[Timeline] A chronological log of significant events related to the artifact. Any
+    registered user may add entries up to 2000 characters. The timeline builds a narrative
+    history: when a file was first reported missing, when a partial recovery was made, when a
+    researcher identified a creator.
+  \item[Analysis] Long-form peer-reviewed writeups, each up to 5000 characters, ranked by
+    community vote score. Investigators contribute their most thorough findings; the community
+    votes the most substantiated analyses to the top. This is the platform's primary
+    knowledge-building mechanism.
+\end{description}
+
+\subsection{Status Lifecycle}
+
+Each artifact carries a status field reflecting the current state of investigation.
+Table~\ref{tab:status} defines the four values.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}p{4cm}p{8.8cm}@{}}
+\toprule
+\textbf{Status} & \textbf{Meaning} \\
+\midrule
+Unknown             & Newly submitted; origin, authorship, or nature not yet determined \\
+Under Investigation & The community is actively researching the artifact \\
+Explained           & Origin, meaning, or authorship has been established \\
+Archived            & Investigation closed; entry preserved for the historical record \\
+\bottomrule
+\end{tabular}
+\caption{Artifact status values and their meanings}
+\label{tab:status}
+\end{table}
+
+The \texttt{status} column is constrained by a \texttt{CHECK} clause to these four values.
+Owners and administrators may update the status at any time from the detail page.
+
+%% ============================================================
+%%  6. DATA VISUALIZATION WITH TABLES
+%% ============================================================
+\section{Data Visualization with Tables}
+
+\subsection{Catalog Browse View}
+
+The catalog page at \texttt{/catalog} presents artifacts in a structured feed styled after
+community aggregator sites. Each row consists of a narrow scoring column on the left (vote score
+with upvote and downvote controls) and a content column on the right (title, category badge,
+description excerpt, submission date, and author). Action buttons appear inline on rows the
+current user owns, giving immediate access to edit and delete without navigating away.
+
+\subsection{Dashboard Tables}
+
+The personal dashboard presents three structured content lists.
+
+\begin{itemize}
+  \item \textbf{My Artifacts}: All artifacts the user has submitted, with title, status badge,
+    and submission date. Each row links to the full detail view.
+  \item \textbf{My Contributions}: All analyses the user has written, each linked back to its
+    parent artifact by title.
+  \item \textbf{My Collections}: All collections the user owns, with item count and inline
+    management controls.
+\end{itemize}
+
+\subsection{Administration Tables}
+
+The admin panel includes two tabular datasets. A contributor leaderboard ranks all users by total
+submission count. A user management table lists every registered account with columns for
+username, email address, join date, administrator flag, ban status, and action buttons for
+moderation operations.
+
+\subsection{Sorting, Pagination, and Action Buttons}
+
+The catalog supports four sort orders: newest first, oldest first, highest vote score, and
+alphabetical by title. Pagination divides the result set into pages of five entries. The current
+page number, total count, and previous/next navigation controls are displayed below the feed. All
+three features compose cleanly: changing any one resets to page one and re-runs the query with all
+active constraints applied simultaneously.
+
+%% ============================================================
+%%  7. FORMS AND DATA ENTRY
+%% ============================================================
+\section{Forms and Data Entry}
+
+The platform includes eight distinct forms. All use React controlled components; all validate
+required fields client-side before making any network call; all surface error messages inline
+rather than through alerts or page reloads.
+
+\subsection{Registration and Login Forms}
+
+The registration form collects email, username, and password with confirmation. The login form
+collects email and password. A ``Forgot password?'' link on the login form switches to the
+password reset view without navigation. Both forms display field-level error messages returned
+by Supabase Auth, translated through \texttt{lib/errorUtils.js} into plain-language descriptions.
+
+\subsection{Artifact Submission Form}
+
+Seven distinct input types in a single form, described in detail in Section~\ref{sec:artifacts}
+(Table~\ref{tab:fields}). Notable behaviors: the category field acts as a searchable dropdown with
+inline creation; the image upload previews files before committing the upload; the source link
+list grows and shrinks dynamically without re-rendering the entire form.
+
+\subsection{Profile Editing Form}
+
+Separate controls for username, biography, and avatar image. The avatar input accepts image files
+only and enforces a 2 MB client-side size check before initiating the Supabase Storage upload.
+All three fields are optional on any given save; submitting with an empty avatar field does not
+overwrite an existing one.
+
+\subsection{Analysis and Comment Forms}
+
+Inline textarea forms on the artifact detail page. Analyses allow up to 5000 characters; comments
+up to 1000. Both display live character counts and enforce their limits before the Supabase call
+is made, giving the user immediate feedback before any network activity occurs.
+
+\subsection{Collection Forms}
+
+A two-field form (name, optional description) for creating new collections on the dashboard. A
+separate inline search-and-add form allows adding artifacts to a selected collection by searching
+for its title.
+
+\subsection{Validation Approach}
+
+All required fields are checked before the Supabase call fires. Server responses are caught in
+\texttt{try/catch} blocks and passed through \texttt{lib/errorUtils.js}, which maps PostgreSQL
+error codes, PostgREST status strings, check constraint violations, and rate limit exceptions to
+short, specific user-facing messages. A \texttt{23505} unique violation becomes ``That username
+is already taken.'' A rate limit trigger exception becomes ``You are submitting too quickly.
+Please wait before trying again.'' Users never see raw error objects.
+
+%% ============================================================
+%%  8. SEARCH FUNCTIONALITY
+%% ============================================================
+\section{Search Functionality}
+
+The catalog page includes a keyword search input. On submission, the search term filters the
+artifact feed against three columns: \texttt{title}, \texttt{description}, and the submitting
+user's \texttt{username} (available through the \texttt{artifacts\_feed} view). All three use
+case-insensitive pattern matching.
+
+\begin{lstlisting}[style=sql, caption={Keyword search applied across the artifacts\_feed view}]
+SELECT *
+FROM artifacts_feed
+WHERE title       ILIKE '%keyword%'
+   OR description ILIKE '%keyword%'
+   OR username    ILIKE '%keyword%'
+ORDER BY created_at DESC
+LIMIT 5 OFFSET 0;
+\end{lstlisting}
+
+Search composes with all active filters: a keyword search while a category filter is applied
+returns only artifacts matching both constraints simultaneously. Clearing the search field while
+filters remain active re-runs the query with filters intact.
+
+Two supplementary navigation aids appear in the catalog sidebar. A \textbf{tag cloud} offers
+single-click filtering on common topic keywords (``lost media,'' ``ARG,'' ``internet culture,''
+``mystery,'' and others), each functioning as a pre-filled keyword search. An \textbf{archive
+timeline} lists all years for which at least one artifact has been submitted, alongside entry
+counts per year. Clicking a year populates the date-range filter with that calendar year's
+bounds, immediately narrowing the catalog to artifacts from that period.
+
+%% ============================================================
+%%  9. FILTERING SYSTEM
+%% ============================================================
+\section{Filtering System}
+
+The catalog filter panel sits above the artifact feed and exposes four independent filters. All
+filters combine through AND logic, and all update the feed without a full page reload.
+
+\begin{description}[leftmargin=0.3cm]
+  \item[Category filter] A dropdown populated from the live \texttt{categories} table. Selecting
+    a value appends \texttt{.eq('category\_id', id)} to the Supabase query.
+  \item[Status filter] A dropdown presenting the four artifact statuses. Selecting a value
+    appends \texttt{.eq('status', value)}.
+  \item[Date range filter] Two date inputs (from and to). Each active bound appends a
+    \texttt{.gte()} or \texttt{.lte()} constraint on \texttt{artifact\_date}. Either bound may
+    be set independently.
+  \item[Sort order] A dropdown switching between newest, oldest, most-voted, and alphabetical by
+    title. The active sort is applied as an \texttt{.order(field, \{ascending\})} call.
+\end{description}
+
+All filter state lives in React local state within \texttt{CatalogPage.jsx}. A single
+\texttt{fetchArtifacts} function reads the current state of all active filters before building
+the Supabase query, so each filter input is decoupled from the others and the query construction
+logic is centralized in one place. Resetting any filter immediately re-runs the query without it;
+changing a filter resets pagination to page one.
+
+%% ============================================================
+%%  10. DASHBOARD
+%% ============================================================
+\section{Dashboard}
+
+The personal dashboard at \texttt{/dashboard} is the user's operational home on the platform. It
+opens with a statistics summary card presenting three numbers: total artifacts filed, total
+analyses submitted, and total upvotes received across all artifacts. These figures are computed
+from live Supabase queries on each page load so they always reflect the current state.
+
+\textbf{My Artifacts} lists every artifact the user has submitted, showing title, status as a
+color-coded badge, and submission date. Each row links directly to the artifact's detail page.
+
+\textbf{My Contributions} lists every analysis the user has written, paired with the title of
+its parent artifact as a link. This allows contributors to track every investigation they have
+participated in from a single view.
+
+\textbf{My Collections} lists every collection the user owns, with item count. Each collection
+expands to show its current contents with per-item removal buttons. Above the list, a form allows
+the user to search for any artifact by title and add it to a selected collection. A second form
+below creates a new collection with a name and optional description. Both forms submit and update
+the list without navigating away from the dashboard.
+
+%% ============================================================
+%%  11. ADMINISTRATION PANEL
+%% ============================================================
+\section{Administration Panel}
+\label{sec:admin}
+
+The admin panel at \texttt{/admin} is accessible only to users with \texttt{is\_admin = true} in
+their profile. Attempting to access it as a regular user redirects to the home page. The panel
+is organized into four operational sections.
+
+\subsection{Activity Charts}
+
+The top of the panel displays a 14-day activity overview in bar chart form. Four metrics are
+charted independently: artifacts submitted per day, analyses written per day, comments posted
+per day, and new users registered per day. Data is retrieved by querying each respective table
+for records with \texttt{created\_at} within the past 14 days, then grouped into daily buckets
+client-side and rendered as inline SVG bar charts. Administrators can identify unusual spikes in
+activity or submission patterns at a glance.
+
+\subsection{User Management}
+
+A full table of all registered users presents username, email address, join date, administrator
+status, and ban status for each account. Each row includes action buttons. Banning a user sets
+\texttt{is\_banned = true} on their profile, which the RLS INSERT policies across all content
+tables evaluate before permitting writes. A badge management form on each user row allows
+administrators to assign or revoke individual badges manually, covering cases such as verified
+researchers or community veterans who have not yet earned a badge through the automated trigger
+system.
+
+\subsection{Moderation Queue}
+
+Any registered user can report an artifact from its detail page by clicking the ``Report'' button
+and entering a reason. All open reports appear in the moderation queue on the admin panel. Each
+entry displays the reported artifact's title (linked), the reporting user's username, the stated
+reason, and the submission timestamp. Administrators resolve reports by clicking the ``Resolve''
+button, which updates the status to \texttt{'Resolved'} and removes the entry from the active
+queue. The \texttt{reports} table has RLS policies permitting only administrators to read or
+modify it; regular users can insert reports but cannot read or edit them.
+
+\subsection{Category Management}
+
+Administrators can add new categories through an inline form. Existing categories are listed
+with edit and delete controls. Deleting a category is blocked by the foreign key constraint on
+the \texttt{artifacts} table if any artifacts currently reference it, preventing orphaned
+records.
+
+%% ============================================================
+%%  12. EXTENDED PLATFORM FEATURES
+%% ============================================================
+\section{Extended Platform Features}
+
+Beyond the project brief requirements, the Internet Artifact Archive implements several features
+that transform it from a catalog application into a functioning research community.
+
+\subsection{Voting and Scoring}
+
+Every artifact and every analysis can be upvoted (+1) or downvoted (-1) by any registered,
+non-banned user. Vote scores are stored as integer columns directly on the \texttt{artifacts}
+and \texttt{analyses} tables. A pair of database triggers recompute each score from the vote
+table after every insert, update, or delete operation, ensuring the stored score is always the
+authoritative sum regardless of concurrent activity.
+
+Self-voting on artifacts is blocked by an RLS INSERT policy. The \texttt{artifact\_votes} table
+caches the artifact owner's user ID in an \texttt{artifact\_owner\_id} column (maintained by a
+separate trigger that copies it from the \texttt{artifacts} table on insert). The INSERT policy
+checks \texttt{auth.uid() <> artifact\_owner\_id} and rejects self-votes at the policy level.
+
+Votes are submitted with an upsert operation using \texttt{onConflict: 'artifact\_id,user\_id'}.
+This allows a user to change an existing vote (from +1 to -1 or vice versa) by replacing the
+prior record rather than creating a duplicate. Removing a vote deletes the row outright and
+triggers a score recomputation.
+
+\subsection{Badge System}
+
+Six badges are awarded automatically based on contribution history and account age. The full
+award conditions are listed in Table~\ref{tab:badges}.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}p{3cm}p{4.6cm}p{5cm}@{}}
+\toprule
+\textbf{Badge} & \textbf{Trigger event} & \textbf{Award condition} \\
+\midrule
+Case Opened  & Account registration       & Always awarded on signup \\
+Contributor  & Artifact insert / delete   & $\geq 3$ artifacts filed \\
+Archivist    & Analysis insert / delete   & $\geq 3$ analyses submitted \\
+Investigator & Analysis insert / delete   & $\geq 2$ analyses on Explained artifacts \\
+Curator      & Collection insert / delete & $\geq 1$ collection created \\
+Veteran      & Any of the above events    & Account age $\geq 30$ days \\
+\bottomrule
+\end{tabular}
+\caption{Badge award conditions and trigger events}
+\label{tab:badges}
+\end{table}
+
+Badges are stored as a text array in the \texttt{profiles.badges} column. A PostgreSQL function
+\texttt{refresh\_badges(user\_id)} evaluates all conditions for a given user by querying current
+counts and the account creation date, then writes the resulting array back to the profile.
+Database triggers on the \texttt{artifacts}, \texttt{analyses}, and \texttt{collections} tables
+call this function after each relevant insert or delete. Badge state is therefore always current;
+no background job or scheduled task is needed.
+
+The \texttt{BadgeDisplay} component renders each badge as a color-coded chip. A \texttt{max}
+prop limits how many chips are shown inline; any overflow is summarized as ``+N more,'' keeping
+the navigation header and profile display uncluttered.
+
+\subsection{Community Wall}
+
+The home page includes a real-time community message board. Any visitor may post a message of
+up to 280 characters; registered users post under their username, while anonymous visitors are
+assigned a generated alias stored in \texttt{sessionStorage}. The alias format
+(\texttt{anonymous[0-9]\{3,\}(-[a-z]+-[a-z]+)?}) is enforced by a \texttt{CHECK} constraint
+in the database, preventing arbitrary strings from being submitted as display names.
+
+The wall shows posts from the past 24 hours, capped at 180 entries per view. Registered users
+can react to any post with a ``cheer'' (a lightweight acknowledgment reaction), and posts may
+reply to a parent post, forming shallow two-level threads. The wall refreshes every 15 seconds
+to surface new content.
+
+The \texttt{wall\_posts\_with\_cheers} view aggregates cheer counts per post and computes a
+per-user \texttt{cheered\_by\_user} boolean using \texttt{auth.uid()} inside the view
+definition, so the interface renders each post's reaction state without a separate join or query.
+
+\subsection{Collections}
+
+Registered users can create named collections grouping any set of artifacts. Each collection has
+a name (required, 1 to 200 characters) and an optional description (up to 500 characters).
+Collections are publicly visible and linked from the creator's dashboard. Only the owner may
+modify a collection's contents; this restriction is enforced by RLS policies on both the
+\texttt{collections} and \texttt{collection\_items} tables. The \texttt{collection\_items} table
+uses a composite primary key \texttt{(collection\_id, artifact\_id)}, preventing duplicate
+entries.
+
+\subsection{Content Reporting}
+
+The artifact detail page exposes a ``Report'' button to registered users. Clicking it opens a
+form with a free-text reason field. Submitted reports are inserted into the \texttt{reports}
+table with a default status of \texttt{'Open'}. Only administrators can read the reports table;
+regular users can submit reports but have no visibility into others'. The moderation workflow
+is described in Section~\ref{sec:admin}.
+
+%% ============================================================
+%%  13. DATABASE DESIGN
+%% ============================================================
+\section{Database Design}
+
+\subsection{Schema Overview}
+
+The database consists of eleven tables, two views, approximately fourteen triggers, and around
+forty row-level security policies. The full schema is defined in a single idempotent SQL file
+(\texttt{supabase/schema.sql}) using \texttt{CREATE ... IF NOT EXISTS} and
+\texttt{DROP ... IF EXISTS} patterns so it can be applied cleanly to a fresh database or
+re-applied after changes without errors. The file is approximately 800 lines.
+
+\subsection{Core Entity Tables}
+
+\textbf{profiles} extends Supabase's built-in \texttt{auth.users} table with application-level
+data. The \texttt{id} column is a foreign key referencing \texttt{auth.users(id)} with
+\texttt{ON DELETE CASCADE}. Username is constrained to 2--50 characters with a \texttt{UNIQUE}
+index. The \texttt{badges} column is a \texttt{text[]} array. Booleans \texttt{is\_admin} and
+\texttt{is\_banned} default to \texttt{false}.
+
+\textbf{artifacts} is the central entity of the application. Key columns: \texttt{user\_id}
+(owner, foreign key to profiles), \texttt{title} (1--300 chars), \texttt{description}
+(1--5000 chars), \texttt{category\_id} (foreign key to categories), \texttt{source\_link}
+(JSON array serialized as text), \texttt{media\_url} (JSON array of Storage URLs serialized as
+text), \texttt{artifact\_date} (date), \texttt{status} (check-constrained text),
+\texttt{vote\_score} (integer, trigger-maintained). Indexes exist on \texttt{category\_id},
+\texttt{status}, \texttt{artifact\_date}, and \texttt{vote\_score DESC} to support catalog
+filter and sort operations efficiently.
+
+\textbf{categories} is a simple lookup table: auto-increment \texttt{id} and a \texttt{UNIQUE}
+\texttt{name}. Seeded with six initial values: Lost Media, Old Websites, Internet Culture, ARGs,
+Digital Art, and Forums/Communities.
+
+\textbf{analyses} and \textbf{comments} each carry foreign keys to both \texttt{artifact\_id}
+and \texttt{user\_id}. Analyses additionally have a trigger-maintained \texttt{vote\_score}
+integer. \textbf{timeline\_entries} follow the same two-key pattern without voting.
+
+\textbf{artifact\_votes} is keyed on the composite primary key \texttt{(artifact\_id, user\_id)}.
+It additionally caches \texttt{artifact\_owner\_id} for use by the self-vote prevention RLS
+policy. \textbf{analysis\_votes} is keyed on \texttt{(analysis\_id, user\_id)}.
+
+\textbf{collections} holds user-owned named groups. \textbf{collection\_items} links collections
+to artifacts through a composite primary key \texttt{(collection\_id, artifact\_id)}.
+
+\textbf{wall\_posts} has a nullable \texttt{user\_id} to support anonymous posts. The
+\texttt{alias} display name column is constrained by the anonymous format check. A
+self-referencing \texttt{reply\_to} foreign key supports thread replies.
+
+\textbf{wall\_post\_cheers} is keyed on \texttt{(post\_id, user\_id)}.
+
+\textbf{reports} references \texttt{artifact\_id} and \texttt{user\_id}, with a \texttt{status}
+column constrained to \texttt{'Open'} or \texttt{'Resolved'}, defaulting to \texttt{'Open'}.
+
+\subsection{Views}
+
+\textbf{artifacts\_feed} joins \texttt{artifacts}, \texttt{categories}, and \texttt{profiles}
+into a flat view. Denormalizing \texttt{category\_name} and \texttt{username} at the view level
+means the catalog page never issues three-table joins from application code; it queries a single
+view with filters applied.
+
+\textbf{wall\_posts\_with\_cheers} aggregates cheer counts per post through a \texttt{LEFT JOIN}
+on \texttt{wall\_post\_cheers} and computes the current user's cheer status as a subquery boolean
+using \texttt{auth.uid()} inside the view definition. Explicit \texttt{GRANT SELECT} statements
+allow the view to be queried under the public role.
+
+\subsection{Triggers and Business Logic}
+
+\textbf{Rate limiting} is the most security-critical trigger group. Before-insert triggers on
+\texttt{artifacts}, \texttt{analyses}, \texttt{comments}, and votes count the calling user's
+submissions in the past 60 minutes and raise an exception if the respective limit is exceeded.
+The limits are: 5 artifacts/hour, 10 analyses/hour, 20 comments/hour, and 50 votes/hour combined
+across artifact and analysis votes.
+
+\begin{lstlisting}[style=sql, caption={Rate limiting trigger function for artifact submissions}]
+CREATE OR REPLACE FUNCTION check_artifact_rate_limit()
+RETURNS trigger AS $$
+BEGIN
+  IF (
+    SELECT COUNT(*) FROM artifacts
+    WHERE user_id = NEW.user_id
+      AND created_at > NOW() - INTERVAL '1 hour'
+  ) >= 5 THEN
+    RAISE EXCEPTION
+      'Rate limit exceeded: max 5 artifacts per hour';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER artifact_rate_limit
+  BEFORE INSERT ON artifacts
+  FOR EACH ROW EXECUTE FUNCTION check_artifact_rate_limit();
+\end{lstlisting}
+
+\textbf{Score recalculation.} After-insert, after-update, and after-delete triggers on
+\texttt{artifact\_votes} and \texttt{analysis\_votes} recompute \texttt{SUM(value)} from all
+votes for the affected target and write the result to the corresponding \texttt{vote\_score}
+column. Storing the precomputed score avoids aggregation joins on every catalog query.
+
+\begin{lstlisting}[style=sql, caption={Vote score synchronization trigger for artifacts}]
+CREATE OR REPLACE FUNCTION sync_artifact_score_from_votes()
+RETURNS trigger AS $$
+DECLARE
+  target_id bigint;
+BEGIN
+  target_id := COALESCE(NEW.artifact_id, OLD.artifact_id);
+  UPDATE artifacts
+  SET vote_score = (
+    SELECT COALESCE(SUM(value), 0)
+    FROM artifact_votes
+    WHERE artifact_id = target_id
+  )
+  WHERE id = target_id;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+\end{lstlisting}
+
+\textbf{Badge refresh.} Triggers on \texttt{artifacts}, \texttt{analyses}, and
+\texttt{collections} fire after inserts and deletes and call \texttt{refresh\_badges(user\_id)}.
+The function evaluates all six badge conditions and writes the resulting text array to
+\texttt{profiles.badges} in a single update.
+
+\textbf{Profile protection.} A before-update trigger on \texttt{profiles} raises an exception
+if a non-administrator attempts to modify \texttt{is\_admin}, \texttt{is\_banned}, or
+\texttt{badges}. This guard prevents privilege escalation through direct API calls that bypass
+the frontend entirely.
+
+\textbf{New user initialization.} An after-insert trigger on \texttt{auth.users} creates the
+\texttt{profiles} row, assigns the ``Case Opened'' badge, and resolves username collisions
+before the registration response reaches the client.
+
+\textbf{Timestamp maintenance.} Before-update triggers on \texttt{profiles}, \texttt{artifacts},
+and \texttt{analyses} set \texttt{updated\_at = NOW()} automatically, keeping modification
+timestamps accurate without requiring application code to manage them.
+
+%% ============================================================
+%%  14. SECURITY MODEL
+%% ============================================================
+\section{Security Model}
+
+Security in the Internet Artifact Archive is an architectural property, not an afterthought added
+on top of a finished application. The following principles structure the entire design.
+
+\begin{tcolorbox}[principlesbox, title={\color{white}\small Security Principles}]
+\begin{description}[leftmargin=0.3cm, style=nextline, itemsep=6pt, topsep=2pt]
+  \item[\normalfont\bfseries No client trust.]
+    The JavaScript application can be inspected, modified, or bypassed by anyone with access to
+    a browser's developer tools. No constraint, limit, or access rule is enforced only in
+    JavaScript. Every rule is duplicated inside PostgreSQL. Client-side checks provide
+    user-friendly feedback; database-level rules provide actual enforcement.
+
+  \item[\normalfont\bfseries Row-level security on all tables.]
+    Every table in the schema has \texttt{ENABLE ROW LEVEL SECURITY} and
+    \texttt{FORCE ROW LEVEL SECURITY} applied. Every operation (SELECT, INSERT, UPDATE, DELETE)
+    goes through a matching policy. A table with no matching policy denies all access by default.
+    Policies reference \texttt{auth.uid()} to identify the caller without any additional lookup
+    or session table.
+
+  \item[\normalfont\bfseries Rate limits enforced by triggers.]
+    Insert volume limits on all content tables run as before-insert triggers inside PostgreSQL.
+    They evaluate hourly submission counts for the calling user and reject the insert if the
+    limit is exceeded. No amount of concurrent client requests or timing manipulation can
+    circumvent a server-side count at write time.
+
+  \item[\normalfont\bfseries Privilege escalation blocked.]
+    The \texttt{protect\_profile\_update()} trigger catches any attempt to modify the
+    \texttt{is\_admin}, \texttt{is\_banned}, or \texttt{badges} fields by a non-administrator
+    and raises an exception. A carefully crafted PostgREST request body cannot elevate a regular
+    account to administrator status.
+
+  \item[\normalfont\bfseries Self-vote prevention at the policy layer.]
+    The INSERT policy on \texttt{artifact\_votes} evaluates
+    \texttt{auth.uid() <> artifact\_owner\_id} using a cached column rather than a join, keeping
+    the check fast and enforcement entirely server-side.
+
+  \item[\normalfont\bfseries Banned user restrictions.]
+    A helper function \texttt{is\_not\_banned()} is called inside the INSERT policy of every
+    content table. Banned users retain read access to all public content but cannot submit
+    artifacts, analyses, comments, votes, or collections.
+
+  \item[\normalfont\bfseries Anonymous aliases validated by constraint.]
+    The \texttt{wall\_posts.alias} column carries a \texttt{CHECK} constraint using a regular
+    expression pattern, blocking arbitrary strings from being passed as display names for
+    anonymous posts.
+\end{description}
+\end{tcolorbox}
+
+%% ============================================================
+%%  15. USER INTERFACE AND EXPERIENCE
+%% ============================================================
+\section{User Interface and Experience}
+
+The interface adopts a vintage archive aesthetic: warm cream and beige backgrounds, dark brown
+borders, and muted status-specific accent colors (teal for active investigation, sage green for
+explained artifacts, rust for archived). Typography uses Inter for body text and Special Elite
+with Rubik Dirt for display headings, evoking printed reference catalogs and the early community
+sites that the platform seeks to document.
+
+The home page features a GSAP-powered 3D card deck animation implemented in
+\texttt{CardSwap.jsx}. A stack of three cards representing featured artifacts cycles on a
+configurable interval. The front card rotates out with elastic easing while the remaining cards
+advance. Hovering over the deck pauses the animation. The component accepts props for card
+dimensions, spacing, delay, skew amount, and easing function, making it reusable for any set of
+content items.
+
+Navigation is handled by the persistent \texttt{AppShell.jsx} header, which renders across all
+pages except the home page (where the full viewport is reserved for the landing experience). The
+header includes the platform logo, tab navigation, and a user menu dropdown. The dropdown shows
+the signed-in user's username, email, earned badge chips, and links to the dashboard, profile
+page, and (when applicable) admin panel. It closes automatically on route changes.
+
+The \texttt{ErrorBoundary} component wraps the full page tree and catches any unhandled render
+exceptions, presenting a recovery option instead of a blank screen. All async operations that
+call Supabase are wrapped in \texttt{try/catch}; errors pass through \texttt{lib/errorUtils.js},
+which maps every expected failure mode to a short, specific, non-technical message. A
+\texttt{23505} unique key violation becomes ``That username is already taken.'' A trigger
+exception from a rate limit becomes ``You are submitting too quickly. Please wait a moment.''
+Users never see a raw PostgreSQL error code.
+
+%% ============================================================
+%%  16. CONCLUSION
+%% ============================================================
+\section{Conclusion}
+
+\begin{tcolorbox}[
+  colback=calloutbg, colframe=nitgold,
+  boxrule=0.8pt, arc=3pt,
+  left=10pt, right=10pt, top=8pt, bottom=8pt,
+]
+The Internet Artifact Archive delivers all ten requirements of the project brief within a domain
+that gives every feature a genuine, motivated purpose. Authentication protects an archive of
+irreplaceable cultural documentation. The CRUD model represents the full lifecycle of an
+investigation, from initial submission to final archival. Search and filtering allow researchers
+to navigate a growing corpus without scrolling through every entry. The dashboard surfaces each
+user's contributions at a glance. The admin panel keeps content appropriate and the community
+productive.
+\end{tcolorbox}
+
+\vspace{0.5cm}
+
+The platform extends beyond the brief in ways that reflect what a production-grade implementation
+requires in practice: voting with server-enforced self-vote prevention, a badge system driven
+entirely by database triggers, a real-time community wall supporting both authenticated and
+anonymous participation, peer-reviewed long-form analyses ranked by community vote, and a security
+model that places the database as the final authority on access control. These additions do not
+merely satisfy requirements; they make the platform genuinely worth using.
+
+The architecture was chosen to be durable and extensible. Adding a new content type means adding
+a table and a set of RLS policies. Adding a new badge condition means updating one PostgreSQL
+function. Adding a new filter means adding one parameter to one fetch function. The database
+schema is the application's contract with its data, and the React frontend is the interface
+through which the community fulfills it.
+
+\vspace{0.8cm}
+\noindent\textcolor{nitgold}{\rule{\textwidth}{0.6pt}}
+\vspace{0.4cm}
+
+\noindent{\small\color{black!55}
+\textbf{Project repository:} \texttt{echo\_chamber/} \quad
+\textbf{Database schema:} \texttt{supabase/schema.sql} \quad
+\textbf{Frontend entry:} \texttt{src/App.jsx}
+}
+
+\end{document}

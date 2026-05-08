@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { AppShell } from './components/AppShell'
+import { ArchiveLoading } from './components/ArchiveLoading'
 import { AuthPage } from './pages/AuthPage'
 import { UpdatePasswordPage } from './pages/UpdatePasswordPage'
 import { ArtifactPage } from './pages/ArtifactPage'
@@ -127,20 +128,27 @@ export default function App() {
 
     bootstrap()
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_, nextSession) => {
-      try {
-        setSession(nextSession)
-        if (nextSession?.user) {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      setSession(nextSession)
+
+      if (!nextSession?.user) {
+        setProfile(null)
+        return
+      }
+
+      // Avoid running async work directly inside auth callback (can cause lock churn in GoTrue).
+      // Deferring also plays nicer with React StrictMode re-renders.
+      setTimeout(async () => {
+        if (!mounted) return
+        try {
           await withTimeout(
             fetchProfile(nextSession.user.id),
             'Profile refresh timed out. Limited mode enabled.',
           )
-        } else {
-          setProfile(null)
+        } catch (e) {
+          console.warn(`Profile refresh failed on auth state change (${event}):`, e)
         }
-      } catch (e) {
-        console.warn('Profile refresh failed on auth state change:', e)
-      }
+      }, 0)
     })
 
     return () => {
@@ -154,7 +162,14 @@ export default function App() {
     navigate('/homepage')
   }
 
-  if (loading) return <div className="loading-note">Loading archive index...</div>
+  if (loading) {
+    return (
+      <ArchiveLoading
+        message="Indexing archive records…"
+        detail="Re-threading case files and warming up the catalog."
+      />
+    )
+  }
 
   return (
     <AppShell user={user} badgeLabels={user?.badges} onLogout={onLogout}>
